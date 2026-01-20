@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@jotter/shared": "workspace:*",
     "hono": "^4.6.0"
   },
   "devDependencies": {
