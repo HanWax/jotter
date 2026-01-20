@@ -1,1 +1,1 @@
-{"root":["./src/main.tsx","./src/router.tsx","./src/routes/__root.tsx","./src/routes/index.tsx"],"version":"5.9.3"}
+{"root":["./src/main.tsx","./src/router.tsx","./src/lib/clerk.ts","./src/routes/__root.tsx","./src/routes/index.tsx","./src/routes/sign-in.tsx","./src/routes/sign-up.tsx"],"version":"5.9.3"}
