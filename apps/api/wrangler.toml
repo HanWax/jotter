@@ -5,3 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 ENVIRONMENT = "development"
+
+# Secrets (set via `wrangler secret put <NAME>`):
+# - DATABASE_URL: Neon PostgreSQL connection string
+# - CLERK_SECRET_KEY: Clerk backend API key
