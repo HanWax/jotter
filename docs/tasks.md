@@ -1,0 +1,84 @@
+# Task Queue
+
+> Generated from implementation plan. Each task is atomic and independently verifiable.
+
+## Pending
+
+### Phase 1: Project Setup
+- [ ] Task 1: Initialize Turborepo monorepo with pnpm workspaces | Files: package.json, turbo.json, pnpm-workspace.yaml | Size: S
+- [ ] Task 2: Set up apps/web with Vite + React 18 | Files: apps/web/* | Size: M
+- [ ] Task 3: Set up apps/api with Cloudflare Workers + Hono | Files: apps/api/* | Size: M
+- [ ] Task 4: Set up packages/shared for types and Zod schemas | Files: packages/shared/* | Size: S
+- [ ] Task 5: Configure Tailwind CSS in web app | Files: apps/web/tailwind.config.js, postcss.config.js | Size: S
+- [ ] Task 6: Set up Drizzle ORM with Neon connection | Files: apps/api/src/db/* | Size: M
+- [ ] Task 7: Configure Clerk authentication (frontend) | Files: apps/web/src/lib/clerk.ts, main.tsx | Size: S
+- [ ] Task 8: Configure Clerk authentication (backend middleware) | Files: apps/api/src/middleware/auth.ts | Size: S
+
+### Phase 2: Database & Core API
+- [ ] Task 9: Create Drizzle schema - users table | Files: apps/api/src/db/schema.ts | Size: S
+- [ ] Task 10: Create Drizzle schema - folders table | Files: apps/api/src/db/schema.ts | Size: S
+- [ ] Task 11: Create Drizzle schema - documents table | Files: apps/api/src/db/schema.ts | Size: S
+- [ ] Task 12: Create Drizzle schema - tags and document_tags tables | Files: apps/api/src/db/schema.ts | Size: S
+- [ ] Task 13: Create Drizzle schema - assets and document_assets tables | Files: apps/api/src/db/schema.ts | Size: S
+- [ ] Task 14: Create Drizzle schema - document_versions table | Files: apps/api/src/db/schema.ts | Size: S
+- [ ] Task 15: Create Drizzle schema - shares and comments tables | Files: apps/api/src/db/schema.ts | Size: S
+- [ ] Task 16: Implement document CRUD endpoints | Files: apps/api/src/routes/documents.ts | Size: M
+- [ ] Task 17: Implement folder CRUD endpoints | Files: apps/api/src/routes/folders.ts | Size: M
+- [ ] Task 18: Implement tag CRUD endpoints | Files: apps/api/src/routes/tags.ts | Size: S
+
+### Phase 3: Frontend Core
+- [ ] Task 19: Set up TanStack Query client | Files: apps/web/src/lib/query.ts | Size: S
+- [ ] Task 20: Set up TanStack Router with routes | Files: apps/web/src/router.tsx, routes/* | Size: M
+- [ ] Task 21: Create API client with fetch wrapper | Files: apps/web/src/lib/api.ts | Size: S
+- [ ] Task 22: Build document list component | Files: apps/web/src/components/documents/DocumentList.tsx | Size: M
+- [ ] Task 23: Build folder tree sidebar | Files: apps/web/src/components/documents/FolderTree.tsx | Size: M
+- [ ] Task 24: Set up protected routes with Clerk | Files: apps/web/src/routes/* | Size: S
+- [ ] Task 25: Build document hooks (useDocuments, useDocument) | Files: apps/web/src/hooks/useDocuments.ts | Size: S
+
+### Phase 4: Tiptap Editor
+- [ ] Task 26: Install and configure Tiptap with StarterKit | Files: apps/web/src/components/editor/Editor.tsx | Size: M
+- [ ] Task 27: Add Tiptap extensions (TaskList, Image, Link) | Files: apps/web/src/components/editor/extensions/* | Size: M
+- [ ] Task 28: Build editor toolbar component | Files: apps/web/src/components/editor/Toolbar.tsx | Size: M
+- [ ] Task 29: Implement autosave with debounced mutations | Files: apps/web/src/hooks/useAutosave.ts | Size: S
+- [ ] Task 30: Add document title editing | Files: apps/web/src/components/editor/TitleEditor.tsx | Size: S
+
+### Phase 5: Asset Management
+- [ ] Task 31: Configure Cloudflare R2 in wrangler.toml | Files: apps/api/wrangler.toml | Size: S
+- [ ] Task 32: Implement presigned URL generation for uploads | Files: apps/api/src/routes/assets.ts | Size: M
+- [ ] Task 33: Build asset upload component with drag & drop | Files: apps/web/src/components/assets/AssetUploader.tsx | Size: M
+- [ ] Task 34: Build asset browser/gallery component | Files: apps/web/src/components/assets/AssetBrowser.tsx | Size: M
+- [ ] Task 35: Integrate asset insertion into Tiptap | Files: apps/web/src/components/editor/extensions/image.ts | Size: S
+- [ ] Task 36: Track document-asset relationships | Files: apps/api/src/routes/assets.ts | Size: S
+
+### Phase 6: Publishing & Versions
+- [ ] Task 37: Implement publish endpoint | Files: apps/api/src/routes/documents.ts | Size: S
+- [ ] Task 38: Implement unpublish endpoint | Files: apps/api/src/routes/documents.ts | Size: S
+- [ ] Task 39: Build version history API | Files: apps/api/src/routes/versions.ts | Size: M
+- [ ] Task 40: Build version history UI | Files: apps/web/src/components/documents/VersionHistory.tsx | Size: M
+- [ ] Task 41: Implement version restore | Files: apps/api/src/routes/versions.ts | Size: S
+
+### Phase 7: Sharing & Comments
+- [ ] Task 42: Implement share creation endpoint | Files: apps/api/src/routes/shares.ts | Size: M
+- [ ] Task 43: Build public shared document view | Files: apps/web/src/routes/shared.$token.tsx | Size: M
+- [ ] Task 44: Implement inline comment Tiptap extension | Files: apps/web/src/components/editor/extensions/comment.ts | Size: M
+- [ ] Task 45: Build comment thread UI | Files: apps/web/src/components/comments/CommentThread.tsx | Size: M
+- [ ] Task 46: Implement comment resolution workflow | Files: apps/api/src/routes/comments.ts | Size: S
+
+### Phase 8: Polish & Deploy
+- [ ] Task 47: Add error handling and loading states | Files: apps/web/src/components/ui/* | Size: M
+- [ ] Task 48: Implement responsive design | Files: apps/web/src/styles/* | Size: M
+- [ ] Task 49: Configure Cloudflare Workers deployment | Files: apps/api/wrangler.toml | Size: S
+- [ ] Task 50: Configure frontend deployment (Pages/Vercel) | Files: apps/web/vercel.json or wrangler.toml | Size: S
+- [ ] Task 51: Set up environment variables for production | Files: .env.example, README.md | Size: S
+
+## In Progress
+
+(none)
+
+## Completed
+
+(none)
+
+## Failed (needs human intervention)
+
+(none)
