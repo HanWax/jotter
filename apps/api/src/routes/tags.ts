@@ -7,6 +7,7 @@ import {
   createTagSchema,
   updateTagSchema,
   idParamSchema,
+  documentTagParamsSchema,
 } from "@jotter/shared";
 import type { AuthVariables } from "../middleware/auth.ts";
 
@@ -131,10 +132,10 @@ tagsRouter.delete(
 // Add tag to document
 tagsRouter.post(
   "/documents/:documentId/tags/:tagId",
+  zValidator("param", documentTagParamsSchema),
   async (c) => {
     const userId = c.get("userId");
-    const documentId = c.req.param("documentId");
-    const tagId = c.req.param("tagId");
+    const { documentId, tagId } = c.req.valid("param");
     const db = createDb(c.env);
 
     // Verify document belongs to user
@@ -169,10 +170,10 @@ tagsRouter.post(
 // Remove tag from document
 tagsRouter.delete(
   "/documents/:documentId/tags/:tagId",
+  zValidator("param", documentTagParamsSchema),
   async (c) => {
     const userId = c.get("userId");
-    const documentId = c.req.param("documentId");
-    const tagId = c.req.param("tagId");
+    const { documentId, tagId } = c.req.valid("param");
     const db = createDb(c.env);
 
     // Verify document belongs to user

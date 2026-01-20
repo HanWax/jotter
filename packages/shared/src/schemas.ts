@@ -70,6 +70,11 @@ export const idParamSchema = z.object({
   id: z.string().uuid(),
 });
 
+export const documentTagParamsSchema = z.object({
+  documentId: z.string().uuid(),
+  tagId: z.string().uuid(),
+});
+
 export type CreateDocumentInput = z.infer<typeof createDocumentSchema>;
 export type UpdateDocumentInput = z.infer<typeof updateDocumentSchema>;
 export type CreateFolderInput = z.infer<typeof createFolderSchema>;
