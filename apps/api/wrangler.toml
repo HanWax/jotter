@@ -15,3 +15,5 @@ bucket_name = "jotter-assets"
 # - DATABASE_URL: Neon PostgreSQL connection string
 # - CLERK_SECRET_KEY: Clerk backend API key
 # - ASSETS_PUBLIC_URL: Public URL prefix for R2 bucket (if using custom domain or public access)
+# - RESEND_API_KEY: Resend API key for sending emails (optional)
+# - WEB_URL: Frontend URL for share links (defaults to http://localhost:5173)

@@ -10,13 +10,18 @@ import {
 } from "@jotter/shared";
 import { z } from "zod";
 import type { AuthVariables } from "../middleware/auth.ts";
+import { sendEmail, buildShareNotificationEmail } from "../services/email.ts";
 
 const shareTokenSchema = z.object({
   token: z.string().min(1),
 });
 
 type SharesEnv = {
-  Bindings: Env & { CLERK_SECRET_KEY: string };
+  Bindings: Env & {
+    CLERK_SECRET_KEY: string;
+    RESEND_API_KEY?: string;
+    WEB_URL?: string;
+  };
   Variables: AuthVariables;
 };
 
@@ -63,12 +68,12 @@ sharesRouter.post(
     const db = createDb(c.env);
 
     // Verify document belongs to user
-    const [document] = await db
+    const [doc] = await db
       .select()
       .from(documents)
       .where(and(eq(documents.id, id), eq(documents.userId, userId)));
 
-    if (!document) {
+    if (!doc) {
       return c.json({ error: "Document not found" }, 404);
     }
 
@@ -84,6 +89,24 @@ sharesRouter.post(
         expiresAt: expiresAt ?? null,
       })
       .returning();
+
+    // Send email notification (non-blocking, don't fail the request if email fails)
+    const webUrl = c.env.WEB_URL || "http://localhost:5173";
+    const shareUrl = `${webUrl}/shared/${token}`;
+
+    const emailOptions = buildShareNotificationEmail({
+      recipientEmail: email,
+      documentTitle: doc.title,
+      shareUrl,
+      expiresAt: expiresAt ? new Date(expiresAt) : null,
+    });
+
+    // Fire and forget - don't await to avoid blocking response
+    c.executionCtx.waitUntil(
+      sendEmail(c.env.RESEND_API_KEY, emailOptions).catch((err) => {
+        console.error("[Share] Failed to send notification email:", err);
+      })
+    );
 
     return c.json({ share }, 201);
   }
