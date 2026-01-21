@@ -26,7 +26,7 @@
 - [x] Version comparison side-by-side view
 
 ### P4: Sharing & Comments (from specs)
-- [ ] Text selection capture for comment references
+- [x] Text selection capture for comment references
 - [ ] Email notification when share is created
 - [ ] Email notification when comment is added
 - [ ] Pagination for comments list

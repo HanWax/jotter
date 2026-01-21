@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useSharedDocument, useSharedComments, useCreateSharedComment } from "../hooks/useShares";
 import { Editor } from "../components/editor/Editor";
 
@@ -6,9 +6,17 @@ type SharedDocumentRouteProps = {
   token: string;
 };
 
+type TextSelection = {
+  text: string;
+  start: number;
+  end: number;
+};
+
 function CommentForm({
   onSubmit,
   isPending,
+  selection,
+  onClearSelection,
 }: {
   onSubmit: (data: {
     authorName: string;
@@ -19,6 +27,8 @@ function CommentForm({
     selectionText: string;
   }) => void;
   isPending: boolean;
+  selection: TextSelection | null;
+  onClearSelection: () => void;
 }) {
   const [authorName, setAuthorName] = useState("");
   const [authorEmail, setAuthorEmail] = useState("");
@@ -32,16 +42,39 @@ function CommentForm({
       authorName: authorName.trim(),
       authorEmail: authorEmail.trim() || undefined,
       content: content.trim(),
-      selectionStart: 0,
-      selectionEnd: 0,
-      selectionText: "",
+      selectionStart: selection?.start ?? 0,
+      selectionEnd: selection?.end ?? 0,
+      selectionText: selection?.text ?? "",
     });
 
     setContent("");
+    onClearSelection();
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
+      {selection && (
+        <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-yellow-700 font-medium mb-1">
+              Commenting on selected text:
+            </p>
+            <p className="text-sm text-gray-700 italic truncate">
+              "{selection.text}"
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClearSelection}
+            className="text-yellow-600 hover:text-yellow-800 shrink-0"
+            title="Remove selection"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <input
           type="text"
@@ -62,7 +95,7 @@ function CommentForm({
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="Add a comment..."
+        placeholder={selection ? "Add your comment about this text..." : "Add a comment..."}
         rows={3}
         className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
         required
@@ -86,6 +119,54 @@ export function SharedDocumentRoute({ token }: SharedDocumentRouteProps) {
   const { data, isLoading, error } = useSharedDocument(token);
   const { data: commentsData } = useSharedComments(token);
   const createComment = useCreateSharedComment(token);
+  const [selection, setSelection] = useState<TextSelection | null>(null);
+  const documentContentRef = useRef<HTMLDivElement>(null);
+
+  const handleTextSelection = useCallback(() => {
+    const windowSelection = window.getSelection();
+    if (!windowSelection || windowSelection.isCollapsed || !documentContentRef.current) {
+      return;
+    }
+
+    const selectedText = windowSelection.toString().trim();
+    if (!selectedText || selectedText.length > 1000) {
+      return;
+    }
+
+    // Check if selection is within the document content area
+    const range = windowSelection.getRangeAt(0);
+    if (!documentContentRef.current.contains(range.commonAncestorContainer)) {
+      return;
+    }
+
+    // Calculate position relative to document content
+    const preSelectionRange = document.createRange();
+    preSelectionRange.selectNodeContents(documentContentRef.current);
+    preSelectionRange.setEnd(range.startContainer, range.startOffset);
+    const start = preSelectionRange.toString().length;
+    const end = start + selectedText.length;
+
+    setSelection({
+      text: selectedText,
+      start,
+      end,
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelection(null);
+    window.getSelection()?.removeAllRanges();
+  }, []);
+
+  useEffect(() => {
+    const handleMouseUp = () => {
+      // Small delay to ensure selection is complete
+      setTimeout(handleTextSelection, 10);
+    };
+
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => document.removeEventListener("mouseup", handleMouseUp);
+  }, [handleTextSelection]);
 
   if (isLoading) {
     return (
@@ -110,7 +191,7 @@ export function SharedDocumentRoute({ token }: SharedDocumentRouteProps) {
     );
   }
 
-  const { document, share } = data;
+  const { document: sharedDoc, share } = data;
   const comments = commentsData?.comments || [];
 
   return (
@@ -121,17 +202,20 @@ export function SharedDocumentRoute({ token }: SharedDocumentRouteProps) {
           <p className="text-sm text-gray-500 mb-1">
             Shared with: {share.email}
           </p>
-          <h1 className="text-3xl font-bold text-gray-900">{document.title}</h1>
-          {document.status === "published" && document.publishedAt && (
+          <h1 className="text-3xl font-bold text-gray-900">{sharedDoc.title}</h1>
+          {sharedDoc.status === "published" && sharedDoc.publishedAt && (
             <p className="text-sm text-gray-500 mt-1">
-              Published: {new Date(document.publishedAt).toLocaleDateString()}
+              Published: {new Date(sharedDoc.publishedAt).toLocaleDateString()}
             </p>
           )}
         </div>
 
         {/* Document content */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
-          <Editor content={document.content} onUpdate={() => {}} editable={false} />
+        <div
+          ref={documentContentRef}
+          className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8"
+        >
+          <Editor content={sharedDoc.content} onUpdate={() => {}} editable={false} />
         </div>
 
         {/* Comments section */}
@@ -145,6 +229,8 @@ export function SharedDocumentRoute({ token }: SharedDocumentRouteProps) {
             <CommentForm
               onSubmit={createComment.mutate}
               isPending={createComment.isPending}
+              selection={selection}
+              onClearSelection={clearSelection}
             />
           </div>
 
