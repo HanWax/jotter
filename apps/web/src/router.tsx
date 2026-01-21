@@ -52,6 +52,17 @@ const documentRoute = createRoute({
   },
 });
 
+const foldersIndexRoute = createRoute({
+  getParentRoute: () => dashboardRoute,
+  path: "/folders",
+  component: () => (
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Folders</h1>
+      <p className="text-gray-500">Browse and manage your folders.</p>
+    </div>
+  ),
+});
+
 const foldersRoute = createRoute({
   getParentRoute: () => dashboardRoute,
   path: "/folders/$id",
@@ -65,6 +76,39 @@ const foldersRoute = createRoute({
       </div>
     );
   },
+});
+
+const tagsRoute = createRoute({
+  getParentRoute: () => dashboardRoute,
+  path: "/tags",
+  component: () => (
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Tags</h1>
+      <p className="text-gray-500">Manage your document tags.</p>
+    </div>
+  ),
+});
+
+const assetsRoute = createRoute({
+  getParentRoute: () => dashboardRoute,
+  path: "/assets",
+  component: () => (
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Assets</h1>
+      <p className="text-gray-500">Browse your uploaded files and images.</p>
+    </div>
+  ),
+});
+
+const settingsRoute = createRoute({
+  getParentRoute: () => dashboardRoute,
+  path: "/settings",
+  component: () => (
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Settings</h1>
+      <p className="text-gray-500">Manage your account settings.</p>
+    </div>
+  ),
 });
 
 // Public shared document route (no auth)
@@ -85,6 +129,10 @@ export const routeTree = rootRoute.addChildren([
   dashboardRoute.addChildren([
     documentsIndexRoute,
     documentRoute,
+    foldersIndexRoute,
     foldersRoute,
+    tagsRoute,
+    assetsRoute,
+    settingsRoute,
   ]),
 ]);
