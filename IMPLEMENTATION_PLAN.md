@@ -29,7 +29,7 @@
 - [x] Text selection capture for comment references
 - [x] Email notification when share is created
 - [x] Email notification when comment is added
-- [ ] Pagination for comments list
+- [x] Pagination for comments list
 - [ ] Ability to un-revoke a share
 - [ ] Share access analytics (view count)
 

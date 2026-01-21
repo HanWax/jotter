@@ -1,12 +1,13 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, count } from "drizzle-orm";
 import { createDb, type Env } from "../db/index.ts";
 import { documents, shares, comments, users } from "../db/schema.ts";
 import {
   createShareSchema,
   createCommentSchema,
   idParamSchema,
+  paginationSchema,
 } from "@jotter/shared";
 import { z } from "zod";
 import type { AuthVariables } from "../middleware/auth.ts";
@@ -294,12 +295,14 @@ sharesRouter.post(
   }
 );
 
-// Public: Get comments for shared document
+// Public: Get comments for shared document (with pagination)
 sharesRouter.get(
   "/shared/:token/comments",
   zValidator("param", shareTokenSchema),
+  zValidator("query", paginationSchema),
   async (c) => {
     const { token } = c.req.valid("param");
+    const { limit, offset } = c.req.valid("query");
     const db = createDb(c.env);
 
     // Get the share
@@ -321,13 +324,31 @@ sharesRouter.get(
       return c.json({ error: "This share has expired" }, 403);
     }
 
-    // Get comments for this document
+    // Get total count
+    const [countResult] = await db
+      .select({ total: count() })
+      .from(comments)
+      .where(eq(comments.documentId, share.documentId));
+
+    const total = countResult?.total ?? 0;
+
+    // Get paginated comments
     const documentComments = await db
       .select()
       .from(comments)
       .where(eq(comments.documentId, share.documentId))
-      .orderBy(desc(comments.createdAt));
+      .orderBy(desc(comments.createdAt))
+      .limit(limit)
+      .offset(offset);
 
-    return c.json({ comments: documentComments });
+    return c.json({
+      comments: documentComments,
+      pagination: {
+        total,
+        limit,
+        offset,
+        hasMore: offset + documentComments.length < total,
+      },
+    });
   }
 );

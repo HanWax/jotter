@@ -1,12 +1,13 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, count } from "drizzle-orm";
 import { createDb, type Env } from "../db/index.ts";
 import { documents, comments } from "../db/schema.ts";
 import {
   createCommentSchema,
   updateCommentSchema,
   idParamSchema,
+  paginationSchema,
 } from "@jotter/shared";
 import { z } from "zod";
 import type { AuthVariables } from "../middleware/auth.ts";
@@ -22,32 +23,53 @@ type CommentsEnv = {
 
 export const commentsRouter = new Hono<CommentsEnv>();
 
-// Get comments for a document
+// Get comments for a document (with pagination)
 commentsRouter.get(
   "/documents/:documentId/comments",
   zValidator("param", documentCommentParamsSchema),
+  zValidator("query", paginationSchema),
   async (c) => {
     const userId = c.get("userId");
     const { documentId } = c.req.valid("param");
+    const { limit, offset } = c.req.valid("query");
     const db = createDb(c.env);
 
     // Verify document belongs to user
-    const [document] = await db
+    const [doc] = await db
       .select()
       .from(documents)
       .where(and(eq(documents.id, documentId), eq(documents.userId, userId)));
 
-    if (!document) {
+    if (!doc) {
       return c.json({ error: "Document not found" }, 404);
     }
 
+    // Get total count
+    const [countResult] = await db
+      .select({ total: count() })
+      .from(comments)
+      .where(eq(comments.documentId, documentId));
+
+    const total = countResult?.total ?? 0;
+
+    // Get paginated comments
     const documentComments = await db
       .select()
       .from(comments)
       .where(eq(comments.documentId, documentId))
-      .orderBy(desc(comments.createdAt));
+      .orderBy(desc(comments.createdAt))
+      .limit(limit)
+      .offset(offset);
 
-    return c.json({ comments: documentComments });
+    return c.json({
+      comments: documentComments,
+      pagination: {
+        total,
+        limit,
+        offset,
+        hasMore: offset + documentComments.length < total,
+      },
+    });
   }
 );
 
