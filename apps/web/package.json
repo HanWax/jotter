@@ -13,6 +13,7 @@
   "dependencies": {
     "@clerk/clerk-react": "^5.20.0",
     "@jotter/shared": "workspace:*",
+    "@tanstack/react-query": "^5.62.0",
     "@tanstack/react-router": "^1.92.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

@@ -1,9 +1,11 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { ClerkProvider } from "@clerk/clerk-react";
 import { routeTree } from "./router";
 import { clerkPubKey } from "./lib/clerk";
+import { queryClient } from "./lib/query";
 import "./index.css";
 
 const router = createRouter({ routeTree });
@@ -19,8 +21,10 @@ if (!rootElement) throw new Error("Root element not found");
 
 createRoot(rootElement).render(
   <StrictMode>
-    <ClerkProvider publishableKey={clerkPubKey}>
-      <RouterProvider router={router} />
-    </ClerkProvider>
+    <QueryClientProvider client={queryClient}>
+      <ClerkProvider publishableKey={clerkPubKey}>
+        <RouterProvider router={router} />
+      </ClerkProvider>
+    </QueryClientProvider>
   </StrictMode>
 );
