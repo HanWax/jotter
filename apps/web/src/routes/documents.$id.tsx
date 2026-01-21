@@ -148,6 +148,7 @@ export function DocumentRoute({ id }: { id: string }) {
 
       <VersionHistory
         documentId={id}
+        currentContent={document.content}
         isOpen={isVersionHistoryOpen}
         onClose={() => setIsVersionHistoryOpen(false)}
       />

@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useDocumentVersions, useRestoreVersion } from "../../hooks/useDocuments";
 import type { DocumentVersion } from "@jotter/shared";
+import { extractText, truncateText, diffTexts, type DiffSegment } from "../../lib/tiptap";
 
 type VersionHistoryProps = {
   documentId: string;
+  currentContent: unknown;
   isOpen: boolean;
   onClose: () => void;
 };
@@ -12,10 +14,39 @@ function formatDate(date: Date | string): string {
   return new Date(date).toLocaleString();
 }
 
-export function VersionHistory({ documentId, isOpen, onClose }: VersionHistoryProps) {
+function DiffView({ segments }: { segments: DiffSegment[] }) {
+  return (
+    <div className="text-sm leading-relaxed whitespace-pre-wrap">
+      {segments.map((segment, i) => {
+        if (segment.type === "unchanged") {
+          return <span key={i}>{segment.text}</span>;
+        }
+        if (segment.type === "added") {
+          return (
+            <span key={i} className="bg-green-100 text-green-800">
+              {segment.text}
+            </span>
+          );
+        }
+        if (segment.type === "removed") {
+          return (
+            <span key={i} className="bg-red-100 text-red-800 line-through">
+              {segment.text}
+            </span>
+          );
+        }
+        return null;
+      })}
+    </div>
+  );
+}
+
+export function VersionHistory({ documentId, currentContent, isOpen, onClose }: VersionHistoryProps) {
   const { data, isLoading, error } = useDocumentVersions(documentId);
   const restoreVersion = useRestoreVersion();
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
+  const [showDiff, setShowDiff] = useState(false);
 
   const handleRestore = async (version: DocumentVersion) => {
     if (!confirm(`Restore to version ${version.versionNumber}? Current content will be saved as a new version.`)) {
@@ -34,11 +65,22 @@ export function VersionHistory({ documentId, isOpen, onClose }: VersionHistoryPr
     }
   };
 
+  const toggleVersionExpand = (versionId: string) => {
+    if (selectedVersionId === versionId) {
+      setSelectedVersionId(null);
+      setShowDiff(false);
+    } else {
+      setSelectedVersionId(versionId);
+    }
+  };
+
   if (!isOpen) return null;
+
+  const currentText = extractText(currentContent);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] m-4 flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[85vh] m-4 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold">Version History</h2>
@@ -73,36 +115,120 @@ export function VersionHistory({ documentId, isOpen, onClose }: VersionHistoryPr
             </div>
           ) : (
             <div className="space-y-3">
-              {data.versions.map((version) => (
-                <div
-                  key={version.id}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Version {version.versionNumber}</span>
-                      <span className="text-sm text-gray-500">
-                        {formatDate(version.createdAt)}
-                      </span>
-                      {version.createdByName && (
-                        <span className="text-sm text-gray-500">
-                          by {version.createdByName}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Title: {version.title}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleRestore(version)}
-                    disabled={restoringId === version.id}
-                    className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded disabled:opacity-50"
+              {data.versions.map((version) => {
+                const isSelected = selectedVersionId === version.id;
+                const versionText = extractText(version.content);
+                const preview = truncateText(versionText, 120);
+
+                return (
+                  <div
+                    key={version.id}
+                    className={`border rounded-lg transition-colors ${
+                      isSelected ? "border-blue-300 bg-blue-50/50" : "border-gray-200 hover:bg-gray-50"
+                    }`}
                   >
-                    {restoringId === version.id ? "Restoring..." : "Restore"}
-                  </button>
-                </div>
-              ))}
+                    {/* Version Header */}
+                    <div
+                      className="flex items-center justify-between p-4 cursor-pointer"
+                      onClick={() => toggleVersionExpand(version.id)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium">Version {version.versionNumber}</span>
+                          <span className="text-sm text-gray-500">
+                            {formatDate(version.createdAt)}
+                          </span>
+                          {version.createdByName && (
+                            <span className="text-sm text-gray-500">
+                              by {version.createdByName}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {version.title}
+                        </p>
+                        {!isSelected && preview && (
+                          <p className="text-xs text-gray-400 mt-1 truncate">
+                            {preview}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRestore(version);
+                          }}
+                          disabled={restoringId === version.id}
+                          className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded disabled:opacity-50"
+                        >
+                          {restoringId === version.id ? "Restoring..." : "Restore"}
+                        </button>
+                        <svg
+                          className={`w-5 h-5 text-gray-400 transition-transform ${isSelected ? "rotate-180" : ""}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Expanded Content */}
+                    {isSelected && (
+                      <div className="px-4 pb-4 border-t border-gray-200 mt-0 pt-4">
+                        {/* Toggle */}
+                        <div className="flex gap-2 mb-3">
+                          <button
+                            onClick={() => setShowDiff(false)}
+                            className={`px-3 py-1 text-sm rounded ${
+                              !showDiff
+                                ? "bg-gray-800 text-white"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
+                          >
+                            Preview
+                          </button>
+                          <button
+                            onClick={() => setShowDiff(true)}
+                            className={`px-3 py-1 text-sm rounded ${
+                              showDiff
+                                ? "bg-gray-800 text-white"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
+                          >
+                            Compare to Current
+                          </button>
+                        </div>
+
+                        {/* Content Area */}
+                        <div className="bg-white border border-gray-200 rounded-lg p-4 max-h-64 overflow-auto">
+                          {showDiff ? (
+                            <>
+                              <div className="flex gap-4 text-xs text-gray-500 mb-2">
+                                <span className="flex items-center gap-1">
+                                  <span className="w-3 h-3 bg-red-100 border border-red-200 rounded"></span>
+                                  Removed from version
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <span className="w-3 h-3 bg-green-100 border border-green-200 rounded"></span>
+                                  Added in current
+                                </span>
+                              </div>
+                              <DiffView segments={diffTexts(versionText, currentText)} />
+                            </>
+                          ) : (
+                            <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                              {versionText || <span className="text-gray-400 italic">No content</span>}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
