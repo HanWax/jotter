@@ -89,6 +89,61 @@ export function usePublishDocument() {
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
       queryClient.invalidateQueries({ queryKey: ["documents", id] });
+      queryClient.invalidateQueries({ queryKey: ["documents", id, "versions"] });
+    },
+  });
+}
+
+export function useUnpublishDocument() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      return api.documents.unpublish(id, token);
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+      queryClient.invalidateQueries({ queryKey: ["documents", id] });
+    },
+  });
+}
+
+export function useDocumentVersions(documentId: string) {
+  const { getToken } = useAuth();
+
+  return useQuery({
+    queryKey: ["documents", documentId, "versions"],
+    queryFn: async () => {
+      const token = await getToken();
+      return api.documents.getVersions(documentId, token);
+    },
+    enabled: !!documentId,
+  });
+}
+
+export function useRestoreVersion() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      documentId,
+      versionId,
+    }: {
+      documentId: string;
+      versionId: string;
+    }) => {
+      const token = await getToken();
+      return api.documents.restoreVersion(documentId, versionId, token);
+    },
+    onSuccess: (_, { documentId }) => {
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+      queryClient.invalidateQueries({ queryKey: ["documents", documentId] });
+      queryClient.invalidateQueries({
+        queryKey: ["documents", documentId, "versions"],
+      });
     },
   });
 }

@@ -108,6 +108,19 @@ export const api = {
         method: "POST",
         token,
       }),
+    getVersions: (id: string, token: string | null) =>
+      request<{ versions: DocumentVersion[] }>(`/api/documents/${id}/versions`, {
+        token,
+      }),
+    restoreVersion: (
+      documentId: string,
+      versionId: string,
+      token: string | null
+    ) =>
+      request<{ document: Document }>(
+        `/api/documents/${documentId}/versions/${versionId}/restore`,
+        { method: "POST", token }
+      ),
   },
 
   // Folders
@@ -172,6 +185,7 @@ export const api = {
 // Re-export types for convenience
 import type {
   Document,
+  DocumentVersion,
   Folder,
   Tag,
   Asset,
