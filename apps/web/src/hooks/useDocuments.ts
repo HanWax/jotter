@@ -183,3 +183,18 @@ export function useBulkPinDocuments() {
     },
   });
 }
+
+export function useReorderPinnedDocuments() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (documentIds: string[]) => {
+      const token = await getToken();
+      return api.documents.reorderPinned(documentIds, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+    },
+  });
+}

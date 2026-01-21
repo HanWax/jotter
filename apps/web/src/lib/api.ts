@@ -131,6 +131,11 @@ export const api = {
         "/api/documents/bulk/pin",
         { method: "POST", body: { documentIds, isPinned }, token }
       ),
+    reorderPinned: (documentIds: string[], token: string | null) =>
+      request<{ success: boolean; updatedCount: number }>(
+        "/api/documents/reorder-pinned",
+        { method: "POST", body: { documentIds }, token }
+      ),
   },
 
   // Folders

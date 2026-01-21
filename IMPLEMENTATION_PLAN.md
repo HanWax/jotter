@@ -17,7 +17,7 @@
 - [x] Document thumbnails in grid view
 - [x] Bulk selection and actions in list view
 - [x] Document preview on hover
-- [ ] Drag-and-drop reordering of pinned documents
+- [x] Drag-and-drop reordering of pinned documents
 
 ### Future Considerations
 - [ ] Activity feed / timeline

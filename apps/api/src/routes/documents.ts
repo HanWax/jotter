@@ -10,6 +10,7 @@ import {
   documentSearchSchema,
   documentListQuerySchema,
   bulkDocumentIdsSchema,
+  reorderPinnedDocumentsSchema,
 } from "@jotter/shared";
 import { z } from "zod";
 
@@ -44,6 +45,7 @@ documentsRouter.get(
     }
 
     // Build order by
+    // For pinned documents, sort by pinOrder first, then by the specified sort
     const sortColumn =
       sort === "title"
         ? documents.title
@@ -52,11 +54,15 @@ documentsRouter.get(
           : documents.updatedAt;
     const orderFn = order === "asc" ? asc : desc;
 
+    const orderByClause = pinned === "true"
+      ? [asc(documents.pinOrder), orderFn(sortColumn)]
+      : [orderFn(sortColumn)];
+
     let query = db
       .select()
       .from(documents)
       .where(and(...conditions))
-      .orderBy(orderFn(sortColumn));
+      .orderBy(...orderByClause);
 
     if (limit) {
       query = query.limit(limit) as typeof query;
@@ -427,5 +433,49 @@ documentsRouter.post(
       .where(inArray(documents.id, existingIds));
 
     return c.json({ success: true, updatedCount: existingIds.length });
+  }
+);
+
+// Reorder pinned documents
+documentsRouter.post(
+  "/reorder-pinned",
+  zValidator("json", reorderPinnedDocumentsSchema),
+  async (c) => {
+    const userId = c.get("userId");
+    const { documentIds } = c.req.valid("json");
+    const db = createDb(c.env);
+
+    // Verify all documents belong to user and are pinned
+    const existing = await db
+      .select({ id: documents.id })
+      .from(documents)
+      .where(
+        and(
+          inArray(documents.id, documentIds),
+          eq(documents.userId, userId),
+          eq(documents.isPinned, true)
+        )
+      );
+
+    const existingIds = new Set(existing.map((d) => d.id));
+
+    // Filter to only include valid pinned documents
+    const validIds = documentIds.filter((id) => existingIds.has(id));
+    if (validIds.length === 0) {
+      return c.json({ error: "No pinned documents found" }, 404);
+    }
+
+    // Update pinOrder for each document based on its position in the array
+    for (let i = 0; i < validIds.length; i++) {
+      const docId = validIds[i];
+      if (docId) {
+        await db
+          .update(documents)
+          .set({ pinOrder: i })
+          .where(eq(documents.id, docId));
+      }
+    }
+
+    return c.json({ success: true, updatedCount: validIds.length });
   }
 );

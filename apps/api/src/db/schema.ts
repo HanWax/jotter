@@ -70,6 +70,7 @@ export const documents = pgTable("documents", {
   content: jsonb("content"),
   status: documentStatusEnum("status").notNull().default("draft"),
   isPinned: boolean("is_pinned").notNull().default(false),
+  pinOrder: integer("pin_order").default(0),
   publishedContent: jsonb("published_content"),
   publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

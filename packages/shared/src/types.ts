@@ -27,6 +27,7 @@ export type Document = {
   content: unknown;
   status: DocumentStatus;
   isPinned: boolean;
+  pinOrder: number | null;
   publishedContent: unknown | null;
   publishedAt: Date | null;
   createdAt: Date;
