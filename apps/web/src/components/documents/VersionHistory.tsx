@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useDocumentVersions, useRestoreVersion } from "../../hooks/useDocuments";
+import { useDocumentVersions, useRestoreVersion, useUpdateVersionAnnotation } from "../../hooks/useDocuments";
 import type { DocumentVersion } from "@jotter/shared";
 import { extractText, truncateText, diffTexts, type DiffSegment } from "../../lib/tiptap";
 
@@ -37,6 +37,97 @@ function DiffView({ segments }: { segments: DiffSegment[] }) {
         }
         return null;
       })}
+    </div>
+  );
+}
+
+function AnnotationEditor({
+  documentId,
+  version,
+}: {
+  documentId: string;
+  version: DocumentVersion;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [value, setValue] = useState(version.annotation || "");
+  const updateAnnotation = useUpdateVersionAnnotation();
+
+  const handleSave = async () => {
+    await updateAnnotation.mutateAsync({
+      documentId,
+      versionId: version.id,
+      annotation: value.trim() || null,
+    });
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setValue(version.annotation || "");
+    setIsEditing(false);
+  };
+
+  if (isEditing) {
+    return (
+      <div className="mt-3 pt-3 border-t border-gray-200">
+        <label className="block text-xs font-medium text-gray-500 mb-1">
+          Version Note
+        </label>
+        <textarea
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Add a note about this version..."
+          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+          rows={2}
+          maxLength={500}
+        />
+        <div className="flex justify-between items-center mt-2">
+          <span className="text-xs text-gray-400">{value.length}/500</span>
+          <div className="flex gap-2">
+            <button
+              onClick={handleCancel}
+              className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={updateAnnotation.isPending}
+              className="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50"
+            >
+              {updateAnnotation.isPending ? "Saving..." : "Save"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 pt-3 border-t border-gray-200">
+      {version.annotation ? (
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <span className="text-xs font-medium text-gray-500">Note: </span>
+            <span className="text-sm text-gray-700">{version.annotation}</span>
+          </div>
+          <button
+            onClick={() => setIsEditing(true)}
+            className="text-xs text-blue-600 hover:text-blue-800 shrink-0"
+          >
+            Edit
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setIsEditing(true)}
+          className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+        >
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Add note
+        </button>
+      )}
     </div>
   );
 }
@@ -147,7 +238,12 @@ export function VersionHistory({ documentId, currentContent, isOpen, onClose }: 
                         <p className="text-sm text-gray-600 mt-1">
                           {version.title}
                         </p>
-                        {!isSelected && preview && (
+                        {version.annotation && !isSelected && (
+                          <p className="text-xs text-blue-600 mt-1 italic truncate">
+                            {version.annotation}
+                          </p>
+                        )}
+                        {!isSelected && !version.annotation && preview && (
                           <p className="text-xs text-gray-400 mt-1 truncate">
                             {preview}
                           </p>
@@ -224,6 +320,9 @@ export function VersionHistory({ documentId, currentContent, isOpen, onClose }: 
                             </div>
                           )}
                         </div>
+
+                        {/* Annotation Editor */}
+                        <AnnotationEditor documentId={documentId} version={version} />
                       </div>
                     )}
                   </div>

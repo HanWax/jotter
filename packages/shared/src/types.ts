@@ -40,6 +40,7 @@ export type DocumentVersion = {
   content: unknown;
   title: string;
   versionNumber: number;
+  annotation: string | null;
   createdAt: Date;
   createdBy: string;
   createdByName: string | null;

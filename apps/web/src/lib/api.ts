@@ -136,6 +136,16 @@ export const api = {
         "/api/documents/reorder-pinned",
         { method: "POST", body: { documentIds }, token }
       ),
+    updateVersionAnnotation: (
+      documentId: string,
+      versionId: string,
+      annotation: string | null,
+      token: string | null
+    ) =>
+      request<{ version: DocumentVersion }>(
+        `/api/documents/${documentId}/versions/${versionId}`,
+        { method: "PATCH", body: { annotation }, token }
+      ),
   },
 
   // Folders

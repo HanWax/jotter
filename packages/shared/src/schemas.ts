@@ -114,6 +114,10 @@ export const reorderPinnedDocumentsSchema = z.object({
   documentIds: z.array(z.string().uuid()).min(1).max(100),
 });
 
+export const updateVersionAnnotationSchema = z.object({
+  annotation: z.string().max(500).nullable(),
+});
+
 export type CreateDocumentInput = z.infer<typeof createDocumentSchema>;
 export type UpdateDocumentInput = z.infer<typeof updateDocumentSchema>;
 export type CreateFolderInput = z.infer<typeof createFolderSchema>;
@@ -130,3 +134,4 @@ export type DocumentSearchInput = z.infer<typeof documentSearchSchema>;
 export type DocumentListQueryInput = z.infer<typeof documentListQuerySchema>;
 export type BulkDocumentIdsInput = z.infer<typeof bulkDocumentIdsSchema>;
 export type ReorderPinnedDocumentsInput = z.infer<typeof reorderPinnedDocumentsSchema>;
+export type UpdateVersionAnnotationInput = z.infer<typeof updateVersionAnnotationSchema>;

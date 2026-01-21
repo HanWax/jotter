@@ -15,6 +15,13 @@
       "when": 1768979573198,
       "tag": "0001_modern_thunderbolts",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1769006535763,
+      "tag": "0002_silky_nekra",
+      "breakpoints": true
     }
   ]
 }

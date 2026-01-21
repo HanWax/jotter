@@ -11,6 +11,7 @@ import {
   documentListQuerySchema,
   bulkDocumentIdsSchema,
   reorderPinnedDocumentsSchema,
+  updateVersionAnnotationSchema,
 } from "@jotter/shared";
 import { z } from "zod";
 
@@ -313,6 +314,7 @@ documentsRouter.get(
         content: documentVersions.content,
         title: documentVersions.title,
         versionNumber: documentVersions.versionNumber,
+        annotation: documentVersions.annotation,
         createdAt: documentVersions.createdAt,
         createdBy: documentVersions.createdBy,
         createdByName: users.name,
@@ -388,6 +390,53 @@ documentsRouter.post(
       .returning();
 
     return c.json({ document: doc });
+  }
+);
+
+// Update version annotation
+documentsRouter.patch(
+  "/:id/versions/:versionId",
+  zValidator("param", versionIdParamSchema),
+  zValidator("json", updateVersionAnnotationSchema),
+  async (c) => {
+    const userId = c.get("userId");
+    const { id, versionId } = c.req.valid("param");
+    const { annotation } = c.req.valid("json");
+    const db = createDb(c.env);
+
+    // Verify document belongs to user
+    const [existing] = await db
+      .select()
+      .from(documents)
+      .where(and(eq(documents.id, id), eq(documents.userId, userId)));
+
+    if (!existing) {
+      return c.json({ error: "Document not found" }, 404);
+    }
+
+    // Verify version belongs to document
+    const [version] = await db
+      .select()
+      .from(documentVersions)
+      .where(
+        and(
+          eq(documentVersions.id, versionId),
+          eq(documentVersions.documentId, id)
+        )
+      );
+
+    if (!version) {
+      return c.json({ error: "Version not found" }, 404);
+    }
+
+    // Update annotation
+    const [updated] = await db
+      .update(documentVersions)
+      .set({ annotation })
+      .where(eq(documentVersions.id, versionId))
+      .returning();
+
+    return c.json({ version: updated });
   }
 );
 

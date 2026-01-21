@@ -108,6 +108,7 @@ export const documentVersions = pgTable("document_versions", {
   content: jsonb("content"),
   title: text("title").notNull(),
   versionNumber: integer("version_number").notNull(),
+  annotation: text("annotation"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   createdBy: uuid("created_by")
     .notNull()

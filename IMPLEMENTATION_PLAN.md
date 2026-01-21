@@ -22,7 +22,7 @@
 ### P3: Publishing & Versions (from specs)
 - [x] Show version creator name in history
 - [x] Show content preview/diff between versions
-- [ ] Ability to name/annotate versions
+- [x] Ability to name/annotate versions
 - [ ] Version comparison side-by-side view
 
 ### P4: Sharing & Comments (from specs)

@@ -148,6 +148,31 @@ export function useRestoreVersion() {
   });
 }
 
+export function useUpdateVersionAnnotation() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      documentId,
+      versionId,
+      annotation,
+    }: {
+      documentId: string;
+      versionId: string;
+      annotation: string | null;
+    }) => {
+      const token = await getToken();
+      return api.documents.updateVersionAnnotation(documentId, versionId, annotation, token);
+    },
+    onSuccess: (_, { documentId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["documents", documentId, "versions"],
+      });
+    },
+  });
+}
+
 export function useBulkDeleteDocuments() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
