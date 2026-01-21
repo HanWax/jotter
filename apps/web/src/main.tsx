@@ -7,6 +7,7 @@ import { routeTree } from "./router";
 import { clerkPubKey } from "./lib/clerk";
 import { queryClient } from "./lib/query";
 import { AuthTokenSetter } from "./components/AuthTokenSetter";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./index.css";
 
 const router = createRouter({ routeTree });
@@ -22,12 +23,14 @@ if (!rootElement) throw new Error("Root element not found");
 
 createRoot(rootElement).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <ClerkProvider publishableKey={clerkPubKey}>
-        <AuthTokenSetter>
-          <RouterProvider router={router} />
-        </AuthTokenSetter>
-      </ClerkProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ClerkProvider publishableKey={clerkPubKey}>
+          <AuthTokenSetter>
+            <RouterProvider router={router} />
+          </AuthTokenSetter>
+        </ClerkProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   </StrictMode>
 );
