@@ -10,6 +10,8 @@ type VersionHistoryProps = {
   onClose: () => void;
 };
 
+type ViewMode = "preview" | "diff" | "side-by-side";
+
 function formatDate(date: Date | string): string {
   return new Date(date).toLocaleString();
 }
@@ -37,6 +39,41 @@ function DiffView({ segments }: { segments: DiffSegment[] }) {
         }
         return null;
       })}
+    </div>
+  );
+}
+
+function SideBySideView({
+  versionText,
+  currentText,
+  versionNumber,
+}: {
+  versionText: string;
+  currentText: string;
+  versionNumber: number;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      <div className="flex flex-col">
+        <div className="text-xs font-medium text-gray-500 mb-2 pb-2 border-b border-gray-200">
+          Version {versionNumber}
+        </div>
+        <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-3 max-h-64 overflow-auto">
+          <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+            {versionText || <span className="text-gray-400 italic">No content</span>}
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-col">
+        <div className="text-xs font-medium text-gray-500 mb-2 pb-2 border-b border-gray-200">
+          Current Document
+        </div>
+        <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-3 max-h-64 overflow-auto">
+          <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+            {currentText || <span className="text-gray-400 italic">No content</span>}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -137,7 +174,7 @@ export function VersionHistory({ documentId, currentContent, isOpen, onClose }: 
   const restoreVersion = useRestoreVersion();
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
-  const [showDiff, setShowDiff] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("preview");
 
   const handleRestore = async (version: DocumentVersion) => {
     if (!confirm(`Restore to version ${version.versionNumber}? Current content will be saved as a new version.`)) {
@@ -159,7 +196,7 @@ export function VersionHistory({ documentId, currentContent, isOpen, onClose }: 
   const toggleVersionExpand = (versionId: string) => {
     if (selectedVersionId === versionId) {
       setSelectedVersionId(null);
-      setShowDiff(false);
+      setViewMode("preview");
     } else {
       setSelectedVersionId(versionId);
     }
@@ -171,7 +208,7 @@ export function VersionHistory({ documentId, currentContent, isOpen, onClose }: 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[85vh] m-4 flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[85vh] m-4 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold">Version History</h2>
@@ -274,12 +311,12 @@ export function VersionHistory({ documentId, currentContent, isOpen, onClose }: 
                     {/* Expanded Content */}
                     {isSelected && (
                       <div className="px-4 pb-4 border-t border-gray-200 mt-0 pt-4">
-                        {/* Toggle */}
+                        {/* View Mode Toggle */}
                         <div className="flex gap-2 mb-3">
                           <button
-                            onClick={() => setShowDiff(false)}
+                            onClick={() => setViewMode("preview")}
                             className={`px-3 py-1 text-sm rounded ${
-                              !showDiff
+                              viewMode === "preview"
                                 ? "bg-gray-800 text-white"
                                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                             }`}
@@ -287,39 +324,57 @@ export function VersionHistory({ documentId, currentContent, isOpen, onClose }: 
                             Preview
                           </button>
                           <button
-                            onClick={() => setShowDiff(true)}
+                            onClick={() => setViewMode("diff")}
                             className={`px-3 py-1 text-sm rounded ${
-                              showDiff
+                              viewMode === "diff"
                                 ? "bg-gray-800 text-white"
                                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                             }`}
                           >
-                            Compare to Current
+                            Diff
+                          </button>
+                          <button
+                            onClick={() => setViewMode("side-by-side")}
+                            className={`px-3 py-1 text-sm rounded ${
+                              viewMode === "side-by-side"
+                                ? "bg-gray-800 text-white"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
+                          >
+                            Side by Side
                           </button>
                         </div>
 
                         {/* Content Area */}
-                        <div className="bg-white border border-gray-200 rounded-lg p-4 max-h-64 overflow-auto">
-                          {showDiff ? (
-                            <>
-                              <div className="flex gap-4 text-xs text-gray-500 mb-2">
-                                <span className="flex items-center gap-1">
-                                  <span className="w-3 h-3 bg-red-100 border border-red-200 rounded"></span>
-                                  Removed from version
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <span className="w-3 h-3 bg-green-100 border border-green-200 rounded"></span>
-                                  Added in current
-                                </span>
+                        {viewMode === "side-by-side" ? (
+                          <SideBySideView
+                            versionText={versionText}
+                            currentText={currentText}
+                            versionNumber={version.versionNumber}
+                          />
+                        ) : (
+                          <div className="bg-white border border-gray-200 rounded-lg p-4 max-h-64 overflow-auto">
+                            {viewMode === "diff" ? (
+                              <>
+                                <div className="flex gap-4 text-xs text-gray-500 mb-2">
+                                  <span className="flex items-center gap-1">
+                                    <span className="w-3 h-3 bg-red-100 border border-red-200 rounded"></span>
+                                    Removed from version
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <span className="w-3 h-3 bg-green-100 border border-green-200 rounded"></span>
+                                    Added in current
+                                  </span>
+                                </div>
+                                <DiffView segments={diffTexts(versionText, currentText)} />
+                              </>
+                            ) : (
+                              <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                {versionText || <span className="text-gray-400 italic">No content</span>}
                               </div>
-                              <DiffView segments={diffTexts(versionText, currentText)} />
-                            </>
-                          ) : (
-                            <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                              {versionText || <span className="text-gray-400 italic">No content</span>}
-                            </div>
-                          )}
-                        </div>
+                            )}
+                          </div>
+                        )}
 
                         {/* Annotation Editor */}
                         <AnnotationEditor documentId={documentId} version={version} />

@@ -19,11 +19,11 @@
 - [x] Document preview on hover
 - [x] Drag-and-drop reordering of pinned documents
 
-### P3: Publishing & Versions (from specs)
+### P3: Publishing & Versions (from specs) - COMPLETE
 - [x] Show version creator name in history
 - [x] Show content preview/diff between versions
 - [x] Ability to name/annotate versions
-- [ ] Version comparison side-by-side view
+- [x] Version comparison side-by-side view
 
 ### P4: Sharing & Comments (from specs)
 - [ ] Text selection capture for comment references
