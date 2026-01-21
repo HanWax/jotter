@@ -1,310 +1,342 @@
 ---
 name: loop
-description: Ralph loop orchestrator - execute tasks one at a time with verification gates
+description: Ralph loop orchestrator - execute tasks one at a time with backpressure validation
 ---
 
 # Loop Orchestrator Skill
 
-Implements the Ralph Loop pattern: autonomous single-task execution with verification gates, rollback capability, and failure tracking.
+Implements Geoffrey Huntley's Ralph Wiggum Loop pattern: autonomous single-task execution with backpressure validation, fresh context per iteration, and eventual consistency through repetition.
 
-## Task Queue Location
+> "Ralph is a technique. In its purest form, Ralph is a Bash loop."
+> — Geoffrey Huntley
 
-The task queue file can be specified when invoking the skill. If no path is provided, defaults to `docs/tasks.md`.
+## Core Philosophy
 
-Supported patterns:
-- `docs/tasks.md` (default)
-- `docs/<feature>/tasks.md` (feature-specific task files)
-- Any `.md` file in docs that follows the task queue format
+1. **Let Ralph Ralph** — Trust eventual consistency through iteration. When Ralph produces errors, tune the system through prompt/context adjustments like tuning a guitar.
 
-The skill will automatically look for an associated PRD file:
-- If task file is `docs/tasks.md` → looks for `docs/PRD.md`
-- If task file is `docs/<feature>/tasks.md` → looks for `docs/<feature>/PRD.md`
-- If task file is `docs/<feature>-tasks.md` → looks for `docs/<feature>-PRD.md` or `docs/<feature>.md`
+2. **Fresh Context Per Iteration** — Each loop iteration starts clean. State persists only in files (IMPLEMENTATION_PLAN.md, AGENTS.md, specs/, git history), not in conversation context.
 
-## Task Queue Format
+3. **Backpressure Over Gates** — Tests, linting, type checks, and builds reject invalid work. Simple pass/fail, not complex verification ceremonies.
+
+4. **Move Outside the Loop** — Engineers guide from outside by engineering the environment (prompts, specs, backpressure), not by micromanaging tasks.
+
+5. **One Task Per Loop** — Pick the most important task, implement it, validate, commit, exit. Next iteration picks the next task.
+
+## Three-Phase Architecture
+
+### Phase 1: Requirements Definition
+Human + LLM conversation aligned to Jobs-To-Be-Done (JTBD):
+- Identify what needs to be built and why
+- Break into topics of concern
+- Generate specification documents in `specs/` folder
+
+Output: `specs/*.md` files describing requirements
+
+### Phase 2: Planning Mode (`/loop --plan`)
+Gap analysis comparing specifications against existing code:
+- Study specs using parallel subagents
+- Analyze current codebase state
+- Generate prioritized `IMPLEMENTATION_PLAN.md`
+- **No implementation** — planning only
+
+Output: `IMPLEMENTATION_PLAN.md` with prioritized tasks
+
+### Phase 3: Building Mode (`/loop` or `/loop --build`)
+Execute tasks from the plan:
+- Pick most important incomplete task
+- Implement the functionality
+- Run tests for validation
+- Commit when tests pass
+- Exit (next iteration continues)
+
+## Key Files
+
+```
+project-root/
+├── AGENTS.md                 # Operational guide (how to build/test/run)
+├── IMPLEMENTATION_PLAN.md    # Prioritized task list (living document)
+├── specs/                    # Per-JTBD specification files
+│   ├── auth.md
+│   ├── homepage.md
+│   └── ...
+└── src/                      # Application source code
+```
+
+### AGENTS.md
+Operational guide discovered during execution. Keep it **lean** (~60 lines max):
+- Build commands
+- Test commands
+- Run commands
+- Project-specific patterns
+
+**Important**: Status updates and progress notes belong in `IMPLEMENTATION_PLAN.md`, not here. A bloated AGENTS.md pollutes every future loop's context.
+
+### IMPLEMENTATION_PLAN.md
+Living document updated continuously during execution:
 ```markdown
-# Task Queue
+# Implementation Plan
 
-## Pending
-- [ ] Task 1: Short description | Files: path/to/file.ts | Size: S/M/L
-- [ ] Task 2: Short description | Files: path/to/file.ts | Size: S/M/L
+## Current Focus
+- [ ] Most important task right now
 
-## In Progress
-- [~] Task N: Currently executing task
+## Backlog
+- [ ] Next priority item
+- [ ] Another item
+
+## Discovered Issues
+- [ ] Bug found during task X (needs fix)
 
 ## Completed
-- [x] Task 0: Completed task description
-
-## Failed (needs human intervention)
-- [!] Task N: Failed task with error summary
+- [x] Finished task (commit: abc123)
 ```
+
+When you discover issues, **immediately update** IMPLEMENTATION_PLAN.md. When resolved, remove the item. After tests pass, update the plan, then commit.
+
+**Maintenance**: Periodically clean completed items from IMPLEMENTATION_PLAN.md to keep the file lean. Move old completed items to the git history or archive — a bloated plan pollutes context.
+
+### specs/
+Specification files from Phase 1. One file per JTBD topic:
+```markdown
+# Feature: Authentication
+
+## Jobs To Be Done
+- User can sign up with email
+- User can log in with credentials
+- User can reset password
+
+## Requirements
+...
+
+## Acceptance Criteria
+...
+```
+
+## Task File Location
+
+The task file can be specified when invoking the skill. If no path is provided, defaults to `IMPLEMENTATION_PLAN.md` in project root.
+
+Supported patterns:
+- `IMPLEMENTATION_PLAN.md` (default)
+- `docs/IMPLEMENTATION_PLAN.md`
+- `docs/<feature>/IMPLEMENTATION_PLAN.md` (feature-specific)
+
+The skill will look for associated specs:
+- Project root → `specs/`
+- `docs/` → `docs/specs/`
+- `docs/<feature>/` → `docs/<feature>/specs/`
 
 ## Execution Flow
 
-### 1. Initialization
+### Initialization
 ```
-1. Resolve task queue path (from argument or default to docs/tasks.md)
-2. Read task queue from resolved path
-3. Locate associated PRD file (if exists) for context
-4. Validate queue format
-5. Check git status is clean (no uncommitted changes)
-6. Identify next pending task
-7. Create checkpoint: `git stash push -m "loop-checkpoint-$(date +%s)"` or commit
-```
-
-### 2. Pre-Task Validation
-Before executing any task, validate it meets size limits:
-- **Max 5 files** changed per task
-- **Max 200 lines** added per task
-- **Max 1 new module** introduced per task
-
-If task appears too large:
-- STOP and ask user to split into subtasks
-- Suggest breakdown based on task description
-
-### 3. Spec Generation (Before Implementation)
-For each task, FIRST generate acceptance criteria:
-```markdown
-## Task N Spec
-
-### Description
-{task description}
-
-### Acceptance Criteria
-- [ ] Criterion 1
-- [ ] Criterion 2
-
-### Files to Modify
-- path/to/file.ts (add function X)
-- path/to/other.ts (update import)
-
-### Files to Create
-- path/to/new.ts
-
-### Test Cases Required
-- Test case 1: {input} → {expected output}
-- Test case 2: edge case handling
+1. Resolve plan path (from argument or default)
+2. Study IMPLEMENTATION_PLAN.md (not just read — understand current state)
+3. Study AGENTS.md for operational commands
+4. Study specs/ using parallel subagents to understand requirements
+5. Don't assume something isn't implemented — search the codebase first
+6. Select most important incomplete task
 ```
 
-Write spec to `docs.local/specs/<feature>/task-N.md` before proceeding. The `<feature>` directory is derived from the task file path (e.g., `docs/auth/tasks.md` → `docs.local/specs/auth/task-N.md`). For the default `docs/tasks.md`, specs go to `docs.local/specs/task-N.md`.
-
-### 4. Task Execution
+### Task Execution
 ```
-1. Mark task as [~] In Progress in queue
-2. Execute the implementation
-3. Write/update tests as specified in spec
-4. Stage changes: git add -A
+1. Search codebase before making changes (use parallel subagents)
+2. Implement the functionality per specifications
+   - Implement complete functionality — avoid placeholders
+   - If you discover bugs (even unrelated ones), document or resolve them
+3. Run tests after implementing
+4. If tests pass:
+   - Update IMPLEMENTATION_PLAN.md (mark complete, note any discoveries)
+   - git add -A
+   - git commit with descriptive message
+   - git push (if configured)
+5. If tests fail:
+   - Update IMPLEMENTATION_PLAN.md with discovered issue
+   - Attempt fix in same iteration if simple
+   - Or exit and let next iteration address it
 ```
 
-### 5. Verification Gates (Run in Order)
+### Backpressure Validation
 
-#### Gate 1: TypeScript Compilation
+Run these to validate work. Commands come from AGENTS.md:
 ```bash
-pnpm tsc --noEmit
-```
-- FAIL → Rollback, log error, STOP
+# Type checking (if applicable)
+{typecheck_command from AGENTS.md}
 
-#### Gate 2: Lint Check
-```bash
-pnpm lint
-```
-- FAIL → Attempt auto-fix with `pnpm lint --fix`
-- If still fails → Rollback, log error, STOP
+# Linting
+{lint_command from AGENTS.md}
 
-#### Gate 3: Test Suite (Changed Files Only)
-```bash
-pnpm test --changed
-```
-- FAIL → Rollback, log error, STOP
+# Tests
+{test_command from AGENTS.md}
 
-#### Gate 4: Build Check
-```bash
-pnpm build
-```
-- FAIL → Rollback, log error, STOP
-
-#### Gate 5: Acceptance Criteria Verification
-- Review each criterion from spec
-- Verify implementation meets all criteria
-- If ANY unmet → Rollback, log, STOP
-
-### 6. On Success
-```
-1. Create commit with message:
-   "feat(loop): Task N - {short description}
-
-   Acceptance criteria met:
-   - Criterion 1 ✓
-   - Criterion 2 ✓
-
-   Co-Authored-By: Claude <noreply@anthropic.com>"
-
-2. Mark task as [x] Completed in queue
-3. Update docs.local/loop-log.md with success entry
-4. Check if periodic review needed (every 3 tasks)
-5. Continue to next task OR pause for human review
+# Build
+{build_command from AGENTS.md}
 ```
 
-### 7. On Failure
-```
-1. Rollback changes:
-   git restore .
-   git clean -fd
+If any fail, the work is rejected. Fix issues before committing.
 
-2. Mark task as [!] Failed in queue with error summary
+### On Completion
+After successful commit:
+1. Update IMPLEMENTATION_PLAN.md (mark task complete, note commit hash)
+2. Update AGENTS.md if you learned new operational info
+3. Create git tag if milestone reached (e.g., `v0.0.1` when all errors eliminated)
+4. **Exit** — this is critical. Each iteration must exit after one task to force fresh context in the next iteration. Don't continue to the next task in the same session.
 
-3. Log failure to docs.local/failures.md:
-   | Task N | {Error Type} | {Root Cause} | {Suggested Fix} |
+## Language Patterns
 
-4. STOP execution
-5. Output failure summary for human review
-6. Wait for human to fix or skip task
-```
+Use specific phrasing that shapes behavior:
+- **"Study"** not "read" — implies understanding, not just parsing
+- **"Don't assume not implemented"** — always search before creating
+- **"Capture the why"** — documentation explains reasoning, not just what
+- **"Using parallel subagents"** — explicit instruction to parallelize
 
-### 8. Periodic Review Gate
-After every 3 successful tasks:
-```
-1. Run /review skill on all changes since last review
-2. If review finds issues:
-   - List issues found
-   - Pause for human decision: fix now or continue
-3. If review passes: continue to next task
-```
+## Subagent Usage
 
-## Failure Pattern Tracking
-
-Maintain `docs.local/failures.md` (or `docs.local/<feature>/failures.md` for feature-specific task files):
-```markdown
-# Failure Log
-
-## Patterns Identified
-- Pattern 1: {description} → Fix: {solution}
-
-## Recent Failures
-| Date | Task | Error Type | Root Cause | Fix Applied | Recurrence |
-|------|------|------------|------------|-------------|------------|
-| 2024-01-15 | Task 5 | Type Error | Missing type import | Added import | 0 |
-```
-
-When a failure type recurs 3+ times:
-- STOP and alert user
-- Suggest adding to FORBIDDEN patterns in /review skill
-- Recommend systemic fix
-
-## Loop Log
-
-Maintain `docs.local/loop-log.md` (or `docs.local/<feature>/loop-log.md` for feature-specific task files):
-```markdown
-# Loop Execution Log
-
-## Session: {date-time}
-
-### Task 1: {description}
-- Status: ✓ Completed
-- Files changed: 3
-- Lines added: 45
-- Tests added: 2
-- Duration: {timestamp range}
-- Commit: {hash}
-
-### Task 2: {description}
-- Status: ✗ Failed
-- Error: {type error in X}
-- Rollback: applied
-- Resolution: {pending human review}
-```
+Use parallel subagents effectively:
+- **Up to 500 parallel Sonnet subagents** for searching/reading codebase
+- **Only 1 subagent** for build/test operations (avoid race conditions)
+- **Opus subagents** for complex reasoning about architecture or specs
 
 ## Usage
 
 ```
-/loop                              # Start loop from next pending task (uses docs/tasks.md)
-/loop [path]                       # Start loop using specified task file
-/loop docs/homepage/tasks.md       # Example: run loop for homepage feature
-/loop --task N                     # Start from specific task number
-/loop --dry-run                    # Show what would execute without running
-/loop --status                     # Show current queue status
-/loop --status [path]              # Show status for specific task file
-/loop --pause-after N              # Pause after N tasks for review
-/loop --skip-review                # Skip periodic /review gates (not recommended)
-/loop --continue                   # Continue after human fixed a failure
+/loop                              # Start building from IMPLEMENTATION_PLAN.md
+/loop [path]                       # Use specific plan file
+/loop --plan                       # Enter planning mode (no implementation)
+/loop --status                     # Show current plan status
+/loop --status [path]              # Show status for specific plan
 ```
 
 ### Path Resolution
 
 When a path is provided:
-1. If it's an absolute path, use it directly
-2. If it's a relative path, resolve from project root
+1. If absolute path, use directly
+2. If relative path, resolve from project root
 3. If just a name like `homepage`, look for:
-   - `docs/homepage/tasks.md`
-   - `docs/homepage-tasks.md`
-   - `docs/homepage.tasks.md`
+   - `docs/homepage/IMPLEMENTATION_PLAN.md`
+   - `docs/homepage-plan.md`
 
-## Human Intervention Points
+## AGENTS.md Template
 
-The loop STOPS and waits for human input when:
-1. **Task too large** - needs splitting
-2. **Verification gate fails** - needs debugging
-3. **Failure pattern recurs** - needs systemic fix
-4. **Periodic review finds issues** - needs decision
-5. **User presses CTRL+C** - manual pause
+Create this file to make the loop project-agnostic:
 
-To resume after intervention:
+```markdown
+# AGENTS.md
+
+## Build Commands
+- Install: `pnpm install`
+- Build: `pnpm build`
+- Dev: `pnpm dev`
+
+## Test Commands
+- All tests: `pnpm test`
+- Single file: `pnpm test {file}`
+
+## Type Check
+- `pnpm tsc --noEmit`
+
+## Lint
+- Check: `pnpm lint`
+- Fix: `pnpm lint --fix`
+
+## Project Structure
+- API: `apps/api/`
+- Web: `apps/web/`
+- Shared: `packages/shared/`
+
+## Patterns
+- Use Drizzle ORM for database
+- Use Zod for validation
+- Use TanStack Query for data fetching
 ```
-/loop --continue
+
+## Failure Philosophy
+
+**Don't over-engineer failure handling.**
+
+When something breaks:
+1. Note it in IMPLEMENTATION_PLAN.md
+2. Either fix it now or let the next iteration handle it
+3. Trust eventual consistency — Ralph will keep trying
+
+Only stop for human intervention when:
+- Fundamental architecture decisions needed
+- Security-sensitive changes required
+- Ambiguous requirements need clarification
+- Same failure repeats 3+ times (pattern indicates deeper issue)
+
+## Logging
+
+Maintain `docs.local/loop-log.md` for audit trail:
+```markdown
+# Loop Execution Log
+
+## Session: {date-time}
+
+### Task: {description}
+- Status: Completed
+- Commit: {hash}
+- Notes: {any learnings}
 ```
-
-## Safety Rules
-
-1. **Never force push** - All changes are local commits only
-2. **Never skip tests** - Verification gates are mandatory
-3. **Always checkpoint** - Can rollback any task
-4. **Never batch commits** - One commit per task for clean history
-5. **Never exceed size limits** - Large tasks must be split
-6. **Always log** - Full audit trail of all actions
 
 ## Integration with Other Skills
 
-- **/spec** - Can be called to generate detailed specs before task
-- **/review** - Called automatically every 3 tasks
-- **/prd** - Initial PRD generates the task queue
+- **/spec** — Generate detailed specs for Phase 1
+- **/prd** — Generate PRD that informs specs
+- **/review** — Optional periodic review (not required every N tasks)
 
 ## Example Session
 
 ```
 > /loop
 
-Reading task queue from docs/tasks.md...
-Found 12 pending tasks.
+Studying IMPLEMENTATION_PLAN.md...
+Studying AGENTS.md for operational commands...
+Studying specs/ with parallel subagents...
+
+Current plan has 8 incomplete tasks.
+Most important: "Add user authentication endpoint"
+
+Don't assume not implemented — searching codebase first...
+Found existing: apps/api/src/middleware/auth.ts (Clerk middleware)
+No existing auth routes found.
+
+Implementing authentication endpoint...
+- Created apps/api/src/routes/auth.ts
+- Added login/register handlers
+- Updated apps/api/src/index.ts with route
+
+Running backpressure validation...
+✓ Type check passed
+✓ Lint passed
+✓ Tests passed (4 new tests)
+✓ Build passed
+
+Updating IMPLEMENTATION_PLAN.md (commit: a1b2c3d)...
+Committing: "feat: add user authentication endpoint"
+
+Task complete. Exiting.
+
+[Session ends — next /loop invocation starts fresh]
 ```
 
-Or with a custom path:
+## The Loop
+
+In its purest form, Ralph is a bash loop:
+
+```bash
+while true; do
+  claude-code --print "$(cat PROMPT.md)"
+done
 ```
-> /loop docs/auth/tasks.md
 
-Reading task queue from docs/auth/tasks.md...
-Found PRD at docs/auth/PRD.md
-Found 8 pending tasks.
+Each iteration:
+1. Loads fresh context (IMPLEMENTATION_PLAN.md, AGENTS.md, specs/)
+2. Picks most important task
+3. Implements, validates, commits
+4. Exits
 
-Starting Task 1: Set up Drizzle schema for users table
-- Size: S (estimated 2 files, ~50 lines)
-- Generating spec... done (docs.local/specs/task-1.md)
-- Creating checkpoint... done
+State persists in files and git history, not in conversation context. This is the key insight that makes Ralph work.
 
-Executing task...
-- Created apps/api/src/db/schema.ts
-- Added users table definition
-- Created apps/api/src/db/index.ts
-- Added migration
+---
 
-Running verification gates...
-✓ Gate 1: TypeScript compilation passed
-✓ Gate 2: Lint check passed
-✓ Gate 3: Tests passed (2 new tests)
-✓ Gate 4: Build passed
-✓ Gate 5: Acceptance criteria met (3/3)
-
-Committing: "feat(loop): Task 1 - Set up Drizzle schema for users table"
-Task 1 complete.
-
-Starting Task 2: Add folders table with self-referential parent_id...
-```
+*Based on Geoffrey Huntley's Ralph Wiggum Technique. See: https://ghuntley.com/ralph/*
