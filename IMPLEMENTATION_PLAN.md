@@ -9,8 +9,8 @@
 ## Backlog
 
 ### P1: Should Have (from PRD)
-- [x] Full-text content search (commit: 080ccb0)
-- [ ] Keyboard shortcuts (Cmd+K for search, Cmd+N for new doc)
+- [x] Full-text content search (commit: ebd749f)
+- [x] Keyboard shortcuts (Cmd+K for search, Cmd+N for new doc) (commit: 5895b93)
 
 ### P2: Could Have (from PRD)
 - [ ] Recent searches in search dropdown

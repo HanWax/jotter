@@ -79,8 +79,8 @@
 ## Backlog (Not Yet Implemented)
 
 ### P1: Should Have
-- [ ] Full-text content search (currently title search only)
-- [ ] Keyboard shortcuts (Cmd+K for search, Cmd+N for new doc)
+- [x] Full-text content search (commit: ebd749f)
+- [x] Keyboard shortcuts (Cmd+K for search, Cmd+N for new doc)
 
 ### P2: Could Have
 - [ ] Recent searches in search dropdown
