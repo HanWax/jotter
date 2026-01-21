@@ -26,6 +26,7 @@ export type Document = {
   title: string;
   content: unknown;
   status: DocumentStatus;
+  isPinned: boolean;
   publishedContent: unknown | null;
   publishedAt: Date | null;
   createdAt: Date;
