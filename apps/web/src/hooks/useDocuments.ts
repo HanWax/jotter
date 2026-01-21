@@ -147,3 +147,39 @@ export function useRestoreVersion() {
     },
   });
 }
+
+export function useBulkDeleteDocuments() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (documentIds: string[]) => {
+      const token = await getToken();
+      return api.documents.bulkDelete(documentIds, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+    },
+  });
+}
+
+export function useBulkPinDocuments() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      documentIds,
+      isPinned,
+    }: {
+      documentIds: string[];
+      isPinned: boolean;
+    }) => {
+      const token = await getToken();
+      return api.documents.bulkPin(documentIds, isPinned, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+    },
+  });
+}

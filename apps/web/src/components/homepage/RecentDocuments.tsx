@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { Document } from "@jotter/shared";
 import { DocumentCard } from "../documents/DocumentCard";
 import { DocumentRow } from "../documents/DocumentRow";
+import { BulkActionsBar } from "./BulkActionsBar";
+import { useBulkDeleteDocuments, useBulkPinDocuments } from "../../hooks/useDocuments";
 
 type ViewMode = "grid" | "list";
 
@@ -21,11 +23,79 @@ export function RecentDocuments({
   onViewChange,
 }: RecentDocumentsProps) {
   const [view, setView] = useState<ViewMode>(defaultView);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+
+  const bulkDelete = useBulkDeleteDocuments();
+  const bulkPin = useBulkPinDocuments();
 
   const handleViewChange = (newView: ViewMode) => {
     setView(newView);
     onViewChange?.(newView);
+    // Clear selection when switching views
+    if (newView === "grid") {
+      setSelectedIds(new Set());
+      setIsSelectionMode(false);
+    }
   };
+
+  const handleSelectionChange = useCallback((id: string, isSelected: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (isSelected) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+    if (!isSelectionMode) {
+      setIsSelectionMode(true);
+    }
+  }, [isSelectionMode]);
+
+  const handleSelectAll = useCallback((checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(documents.map((d) => d.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+    setIsSelectionMode(checked);
+  }, [documents]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+    setIsSelectionMode(false);
+  }, []);
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    await bulkDelete.mutateAsync(ids);
+    handleClearSelection();
+  };
+
+  const handleBulkPin = async () => {
+    const ids = Array.from(selectedIds);
+    await bulkPin.mutateAsync({ documentIds: ids, isPinned: true });
+    handleClearSelection();
+  };
+
+  const handleBulkUnpin = async () => {
+    const ids = Array.from(selectedIds);
+    await bulkPin.mutateAsync({ documentIds: ids, isPinned: false });
+    handleClearSelection();
+  };
+
+  const toggleSelectionMode = () => {
+    if (isSelectionMode) {
+      handleClearSelection();
+    } else {
+      setIsSelectionMode(true);
+    }
+  };
+
+  const allSelected = documents.length > 0 && selectedIds.size === documents.length;
+  const someSelected = selectedIds.size > 0 && selectedIds.size < documents.length;
 
   if (isLoading) {
     return (
@@ -47,7 +117,21 @@ export function RecentDocuments({
     <section>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900">Recent Documents</h2>
-        <ViewToggle view={view} onChange={handleViewChange} />
+        <div className="flex items-center gap-2">
+          {view === "list" && documents.length > 0 && (
+            <button
+              onClick={toggleSelectionMode}
+              className={`px-2 py-1 text-xs rounded transition-colors ${
+                isSelectionMode
+                  ? "bg-blue-100 text-blue-700"
+                  : "text-gray-500 hover:bg-gray-100"
+              }`}
+            >
+              {isSelectionMode ? "Cancel" : "Select"}
+            </button>
+          )}
+          <ViewToggle view={view} onChange={handleViewChange} />
+        </div>
       </div>
 
       {documents.length === 0 ? (
@@ -71,6 +155,19 @@ export function RecentDocuments({
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div className="hidden sm:flex items-center gap-4 px-4 py-2 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+            {isSelectionMode && (
+              <div className="shrink-0 pr-3">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  ref={(el) => {
+                    if (el) el.indeterminate = someSelected;
+                  }}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+              </div>
+            )}
             <div className="flex-1">Title</div>
             <div className="w-32 shrink-0">Status</div>
             <div className="hidden md:block w-32 shrink-0">Last Edited</div>
@@ -81,11 +178,24 @@ export function RecentDocuments({
               key={doc.id}
               document={doc}
               onPin={onPin}
-              showPinButton
+              showPinButton={!isSelectionMode}
+              showCheckbox={isSelectionMode}
+              isSelected={selectedIds.has(doc.id)}
+              onSelectionChange={handleSelectionChange}
             />
           ))}
         </div>
       )}
+
+      <BulkActionsBar
+        selectedCount={selectedIds.size}
+        onDelete={handleBulkDelete}
+        onPin={handleBulkPin}
+        onUnpin={handleBulkUnpin}
+        onClearSelection={handleClearSelection}
+        isDeleting={bulkDelete.isPending}
+        isPinning={bulkPin.isPending}
+      />
     </section>
   );
 }

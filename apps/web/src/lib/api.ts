@@ -121,6 +121,16 @@ export const api = {
         `/api/documents/${documentId}/versions/${versionId}/restore`,
         { method: "POST", token }
       ),
+    bulkDelete: (documentIds: string[], token: string | null) =>
+      request<{ success: boolean; deletedCount: number }>(
+        "/api/documents/bulk/delete",
+        { method: "POST", body: { documentIds }, token }
+      ),
+    bulkPin: (documentIds: string[], isPinned: boolean, token: string | null) =>
+      request<{ success: boolean; updatedCount: number }>(
+        "/api/documents/bulk/pin",
+        { method: "POST", body: { documentIds, isPinned }, token }
+      ),
   },
 
   // Folders

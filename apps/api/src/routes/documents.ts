@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { eq, and, desc, asc, max, ilike, or, sql } from "drizzle-orm";
+import { eq, and, desc, asc, max, ilike, or, sql, inArray } from "drizzle-orm";
 import { createDb, type Env } from "../db/index.ts";
 import { documents, documentVersions } from "../db/schema.ts";
 import {
@@ -9,6 +9,7 @@ import {
   idParamSchema,
   documentSearchSchema,
   documentListQuerySchema,
+  bulkDocumentIdsSchema,
 } from "@jotter/shared";
 import { z } from "zod";
 
@@ -371,5 +372,60 @@ documentsRouter.post(
       .returning();
 
     return c.json({ document: doc });
+  }
+);
+
+// Bulk delete documents
+documentsRouter.post(
+  "/bulk/delete",
+  zValidator("json", bulkDocumentIdsSchema),
+  async (c) => {
+    const userId = c.get("userId");
+    const { documentIds } = c.req.valid("json");
+    const db = createDb(c.env);
+
+    // Verify all documents belong to user
+    const existing = await db
+      .select({ id: documents.id })
+      .from(documents)
+      .where(and(inArray(documents.id, documentIds), eq(documents.userId, userId)));
+
+    const existingIds = existing.map((d) => d.id);
+    if (existingIds.length === 0) {
+      return c.json({ error: "No documents found" }, 404);
+    }
+
+    await db.delete(documents).where(inArray(documents.id, existingIds));
+
+    return c.json({ success: true, deletedCount: existingIds.length });
+  }
+);
+
+// Bulk pin/unpin documents
+documentsRouter.post(
+  "/bulk/pin",
+  zValidator("json", bulkDocumentIdsSchema.extend({ isPinned: z.boolean() })),
+  async (c) => {
+    const userId = c.get("userId");
+    const { documentIds, isPinned } = c.req.valid("json");
+    const db = createDb(c.env);
+
+    // Verify all documents belong to user
+    const existing = await db
+      .select({ id: documents.id })
+      .from(documents)
+      .where(and(inArray(documents.id, documentIds), eq(documents.userId, userId)));
+
+    const existingIds = existing.map((d) => d.id);
+    if (existingIds.length === 0) {
+      return c.json({ error: "No documents found" }, 404);
+    }
+
+    await db
+      .update(documents)
+      .set({ isPinned, updatedAt: new Date() })
+      .where(inArray(documents.id, existingIds));
+
+    return c.json({ success: true, updatedCount: existingIds.length });
   }
 );

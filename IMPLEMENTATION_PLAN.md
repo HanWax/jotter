@@ -15,7 +15,7 @@
 ### P2: Could Have (from PRD)
 - [x] Recent searches in search dropdown
 - [x] Document thumbnails in grid view
-- [ ] Bulk selection and actions in list view
+- [x] Bulk selection and actions in list view
 - [ ] Document preview on hover
 - [ ] Drag-and-drop reordering of pinned documents
 
