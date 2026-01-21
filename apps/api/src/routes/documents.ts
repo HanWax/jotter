@@ -1,12 +1,14 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { eq, and, desc, max } from "drizzle-orm";
+import { eq, and, desc, asc, max, ilike } from "drizzle-orm";
 import { createDb, type Env } from "../db/index.ts";
 import { documents, documentVersions } from "../db/schema.ts";
 import {
   createDocumentSchema,
   updateDocumentSchema,
   idParamSchema,
+  documentSearchSchema,
+  documentListQuerySchema,
 } from "@jotter/shared";
 import { z } from "zod";
 
@@ -23,19 +25,66 @@ type DocumentsEnv = {
 
 export const documentsRouter = new Hono<DocumentsEnv>();
 
-// List documents
-documentsRouter.get("/", async (c) => {
-  const userId = c.get("userId");
-  const db = createDb(c.env);
+// List documents with optional filtering
+documentsRouter.get(
+  "/",
+  zValidator("query", documentListQuerySchema),
+  async (c) => {
+    const userId = c.get("userId");
+    const { pinned, sort = "updatedAt", order = "desc", limit } = c.req.valid("query");
+    const db = createDb(c.env);
 
-  const userDocs = await db
-    .select()
-    .from(documents)
-    .where(eq(documents.userId, userId))
-    .orderBy(desc(documents.updatedAt));
+    // Build conditions
+    const conditions = [eq(documents.userId, userId)];
+    if (pinned === "true") {
+      conditions.push(eq(documents.isPinned, true));
+    } else if (pinned === "false") {
+      conditions.push(eq(documents.isPinned, false));
+    }
 
-  return c.json({ documents: userDocs });
-});
+    // Build order by
+    const sortColumn =
+      sort === "title"
+        ? documents.title
+        : sort === "createdAt"
+          ? documents.createdAt
+          : documents.updatedAt;
+    const orderFn = order === "asc" ? asc : desc;
+
+    let query = db
+      .select()
+      .from(documents)
+      .where(and(...conditions))
+      .orderBy(orderFn(sortColumn));
+
+    if (limit) {
+      query = query.limit(limit) as typeof query;
+    }
+
+    const userDocs = await query;
+    return c.json({ documents: userDocs });
+  }
+);
+
+// Search documents
+documentsRouter.get(
+  "/search",
+  zValidator("query", documentSearchSchema),
+  async (c) => {
+    const userId = c.get("userId");
+    const { q } = c.req.valid("query");
+    const db = createDb(c.env);
+
+    const results = await db
+      .select()
+      .from(documents)
+      .where(and(eq(documents.userId, userId), ilike(documents.title, `%${q}%`)))
+      .orderBy(desc(documents.updatedAt))
+      .limit(20);
+
+    return c.json({ documents: results });
+  }
+);
 
 // Get single document
 documentsRouter.get(

@@ -90,6 +90,17 @@ export const idParamSchema = z.object({
   id: z.string().uuid(),
 });
 
+export const documentSearchSchema = z.object({
+  q: z.string().min(1).max(100),
+});
+
+export const documentListQuerySchema = z.object({
+  pinned: z.enum(["true", "false"]).optional(),
+  sort: z.enum(["updatedAt", "createdAt", "title"]).optional(),
+  order: z.enum(["asc", "desc"]).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+});
+
 export const documentTagParamsSchema = z.object({
   documentId: z.string().uuid(),
   tagId: z.string().uuid(),
@@ -107,3 +118,5 @@ export type UpdateCommentInput = z.infer<typeof updateCommentSchema>;
 export type PaginationInput = z.infer<typeof paginationSchema>;
 export type RequestUploadUrlInput = z.infer<typeof requestUploadUrlSchema>;
 export type CreateAssetInput = z.infer<typeof createAssetSchema>;
+export type DocumentSearchInput = z.infer<typeof documentSearchSchema>;
+export type DocumentListQueryInput = z.infer<typeof documentListQuerySchema>;
