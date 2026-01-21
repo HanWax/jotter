@@ -6,6 +6,12 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 ENVIRONMENT = "development"
 
+# R2 bucket for asset storage
+[[r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "jotter-assets"
+
 # Secrets (set via `wrangler secret put <NAME>`):
 # - DATABASE_URL: Neon PostgreSQL connection string
 # - CLERK_SECRET_KEY: Clerk backend API key
+# - ASSETS_PUBLIC_URL: Public URL prefix for R2 bucket (if using custom domain or public access)

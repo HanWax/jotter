@@ -66,6 +66,25 @@ export const paginationSchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
+export const requestUploadUrlSchema = z.object({
+  filename: z.string().min(1).max(255),
+  mimeType: z.string().regex(/^[\w-]+\/[\w.+-]+$/),
+  sizeBytes: z.number().int().min(1).max(50 * 1024 * 1024), // 50MB max
+});
+
+export const createAssetSchema = z.object({
+  filename: z.string().min(1).max(255),
+  originalFilename: z.string().min(1).max(255),
+  mimeType: z.string().regex(/^[\w-]+\/[\w.+-]+$/),
+  sizeBytes: z.number().int().min(1),
+  r2Key: z.string().min(1),
+});
+
+export const documentAssetParamsSchema = z.object({
+  documentId: z.string().uuid(),
+  assetId: z.string().uuid(),
+});
+
 export const idParamSchema = z.object({
   id: z.string().uuid(),
 });
@@ -85,3 +104,5 @@ export type CreateShareInput = z.infer<typeof createShareSchema>;
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;
 export type UpdateCommentInput = z.infer<typeof updateCommentSchema>;
 export type PaginationInput = z.infer<typeof paginationSchema>;
+export type RequestUploadUrlInput = z.infer<typeof requestUploadUrlSchema>;
+export type CreateAssetInput = z.infer<typeof createAssetSchema>;

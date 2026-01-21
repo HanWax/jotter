@@ -1,9 +1,11 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8787";
 
 type RequestOptions = {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PATCH" | "DELETE" | "PUT";
   body?: unknown;
   token?: string | null;
+  headers?: Record<string, string>;
+  isFile?: boolean;
 };
 
 class ApiError extends Error {
@@ -16,24 +18,35 @@ class ApiError extends Error {
   }
 }
 
+let authToken: string | null = null;
+
+export function setAuthToken(token: string | null) {
+  authToken = token;
+}
+
 async function request<T>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { method = "GET", body, token } = options;
+  const { method = "GET", body, token, headers: customHeaders, isFile } = options;
 
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    ...customHeaders,
   };
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  if (!isFile) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const effectiveToken = token ?? authToken;
+  if (effectiveToken) {
+    headers["Authorization"] = `Bearer ${effectiveToken}`;
   }
 
   const response = await fetch(`${API_URL}${endpoint}`, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: isFile ? (body as BodyInit) : body ? JSON.stringify(body) : undefined,
   });
 
   if (!response.ok) {
@@ -45,6 +58,23 @@ async function request<T>(
 }
 
 export const api = {
+  // Generic methods for hooks
+  get: <T>(endpoint: string) =>
+    request<T>(`/api${endpoint}`),
+  post: <T>(endpoint: string, body: unknown) =>
+    request<T>(`/api${endpoint}`, { method: "POST", body }),
+  put: <T>(endpoint: string, body: unknown, options?: { headers?: Record<string, string> }) =>
+    request<T>(`/api${endpoint}`, {
+      method: "PUT",
+      body,
+      isFile: body instanceof File || body instanceof Blob || body instanceof ArrayBuffer,
+      headers: options?.headers,
+    }),
+  patch: <T>(endpoint: string, body: unknown) =>
+    request<T>(`/api${endpoint}`, { method: "PATCH", body }),
+  delete: <T>(endpoint: string) =>
+    request<T>(`/api${endpoint}`, { method: "DELETE" }),
+
   // Documents
   documents: {
     list: (token: string | null) =>
@@ -144,6 +174,7 @@ import type {
   Document,
   Folder,
   Tag,
+  Asset,
   CreateDocumentInput,
   UpdateDocumentInput,
   CreateFolderInput,
@@ -153,3 +184,4 @@ import type {
 } from "@jotter/shared";
 
 export type { ApiError };
+export type { Asset };

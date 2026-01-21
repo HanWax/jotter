@@ -6,7 +6,8 @@ import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Toolbar } from "./Toolbar";
-import { useEffect, useRef } from "react";
+import { AssetPickerModal } from "../assets/AssetPickerModal";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 type EditorProps = {
   content: unknown;
@@ -16,6 +17,7 @@ type EditorProps = {
 
 export function Editor({ content, onUpdate, editable = true }: EditorProps) {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -82,6 +84,19 @@ export function Editor({ content, onUpdate, editable = true }: EditorProps) {
     };
   }, []);
 
+  const handleAddImage = useCallback(() => {
+    setIsAssetPickerOpen(true);
+  }, []);
+
+  const handleAssetSelect = useCallback(
+    (asset: { url: string }) => {
+      if (editor) {
+        editor.chain().focus().setImage({ src: asset.url }).run();
+      }
+    },
+    [editor]
+  );
+
   if (!editor) {
     return (
       <div className="animate-pulse">
@@ -92,11 +107,20 @@ export function Editor({ content, onUpdate, editable = true }: EditorProps) {
   }
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-      {editable && <Toolbar editor={editor} />}
-      <div className="p-4">
-        <EditorContent editor={editor} />
+    <>
+      <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+        {editable && <Toolbar editor={editor} onAddImage={handleAddImage} />}
+        <div className="p-4">
+          <EditorContent editor={editor} />
+        </div>
       </div>
-    </div>
+      {editable && (
+        <AssetPickerModal
+          isOpen={isAssetPickerOpen}
+          onClose={() => setIsAssetPickerOpen(false)}
+          onSelect={handleAssetSelect}
+        />
+      )}
+    </>
   );
 }

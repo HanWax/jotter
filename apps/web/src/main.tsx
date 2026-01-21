@@ -6,6 +6,7 @@ import { ClerkProvider } from "@clerk/clerk-react";
 import { routeTree } from "./router";
 import { clerkPubKey } from "./lib/clerk";
 import { queryClient } from "./lib/query";
+import { AuthTokenSetter } from "./components/AuthTokenSetter";
 import "./index.css";
 
 const router = createRouter({ routeTree });
@@ -23,7 +24,9 @@ createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <ClerkProvider publishableKey={clerkPubKey}>
-        <RouterProvider router={router} />
+        <AuthTokenSetter>
+          <RouterProvider router={router} />
+        </AuthTokenSetter>
       </ClerkProvider>
     </QueryClientProvider>
   </StrictMode>

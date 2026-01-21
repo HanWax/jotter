@@ -4,10 +4,13 @@ import { authMiddleware, type AuthEnv, type AuthVariables } from "./middleware/a
 import { documentsRouter } from "./routes/documents.ts";
 import { foldersRouter } from "./routes/folders.ts";
 import { tagsRouter } from "./routes/tags.ts";
+import { assetsRouter } from "./routes/assets.ts";
 
 type Bindings = AuthEnv & {
   ENVIRONMENT: string;
   DATABASE_URL: string;
+  ASSETS_BUCKET: R2Bucket;
+  ASSETS_PUBLIC_URL?: string;
 };
 
 type Variables = AuthVariables;
@@ -38,6 +41,7 @@ api.get("/me", (c) => {
 api.route("/documents", documentsRouter);
 api.route("/folders", foldersRouter);
 api.route("/tags", tagsRouter);
+api.route("/assets", assetsRouter);
 
 app.route("/api", api);
 

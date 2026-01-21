@@ -2,6 +2,7 @@ import type { Editor } from "@tiptap/react";
 
 type ToolbarProps = {
   editor: Editor;
+  onAddImage?: () => void;
 };
 
 type ToolbarButtonProps = {
@@ -38,11 +39,15 @@ function Divider() {
   return <div className="w-px h-6 bg-gray-300 mx-1" />;
 }
 
-export function Toolbar({ editor }: ToolbarProps) {
+export function Toolbar({ editor, onAddImage }: ToolbarProps) {
   const addImage = () => {
-    const url = prompt("Enter image URL:");
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
+    if (onAddImage) {
+      onAddImage();
+    } else {
+      const url = prompt("Enter image URL:");
+      if (url) {
+        editor.chain().focus().setImage({ src: url }).run();
+      }
     }
   };
 
