@@ -8,16 +8,30 @@
 
 ## Backlog
 
-### P1: Should Have (from PRD)
+### P1: Should Have (from PRD) - COMPLETE
 - [x] Full-text content search (commit: ebd749f)
 - [x] Keyboard shortcuts (Cmd+K for search, Cmd+N for new doc) (commit: 5895b93)
 
-### P2: Could Have (from PRD)
+### P2: Could Have (from PRD) - COMPLETE
 - [x] Recent searches in search dropdown
 - [x] Document thumbnails in grid view
 - [x] Bulk selection and actions in list view
 - [x] Document preview on hover
 - [x] Drag-and-drop reordering of pinned documents
+
+### P3: Publishing & Versions (from specs)
+- [x] Show version creator name in history
+- [ ] Show content preview/diff between versions
+- [ ] Ability to name/annotate versions
+- [ ] Version comparison side-by-side view
+
+### P4: Sharing & Comments (from specs)
+- [ ] Text selection capture for comment references
+- [ ] Email notification when share is created
+- [ ] Email notification when comment is added
+- [ ] Pagination for comments list
+- [ ] Ability to un-revoke a share
+- [ ] Share access analytics (view count)
 
 ### Future Considerations
 - [ ] Activity feed / timeline

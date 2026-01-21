@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { eq, and, desc, asc, max, ilike, or, sql, inArray } from "drizzle-orm";
 import { createDb, type Env } from "../db/index.ts";
-import { documents, documentVersions } from "../db/schema.ts";
+import { documents, documentVersions, users } from "../db/schema.ts";
 import {
   createDocumentSchema,
   updateDocumentSchema,
@@ -307,8 +307,18 @@ documentsRouter.get(
     }
 
     const versions = await db
-      .select()
+      .select({
+        id: documentVersions.id,
+        documentId: documentVersions.documentId,
+        content: documentVersions.content,
+        title: documentVersions.title,
+        versionNumber: documentVersions.versionNumber,
+        createdAt: documentVersions.createdAt,
+        createdBy: documentVersions.createdBy,
+        createdByName: users.name,
+      })
       .from(documentVersions)
+      .leftJoin(users, eq(documentVersions.createdBy, users.id))
       .where(eq(documentVersions.documentId, id))
       .orderBy(desc(documentVersions.versionNumber));
 

@@ -84,6 +84,11 @@ export function VersionHistory({ documentId, isOpen, onClose }: VersionHistoryPr
                       <span className="text-sm text-gray-500">
                         {formatDate(version.createdAt)}
                       </span>
+                      {version.createdByName && (
+                        <span className="text-sm text-gray-500">
+                          by {version.createdByName}
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-gray-600 mt-1">
                       Title: {version.title}

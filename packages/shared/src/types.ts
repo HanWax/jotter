@@ -42,6 +42,7 @@ export type DocumentVersion = {
   versionNumber: number;
   createdAt: Date;
   createdBy: string;
+  createdByName: string | null;
 };
 
 export type Tag = {
