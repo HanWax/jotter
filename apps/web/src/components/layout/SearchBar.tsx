@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../lib/api";
+import { useRecentSearches } from "../../hooks/useRecentSearches";
 import type { Document } from "@jotter/shared";
 
 interface SearchBarProps {
@@ -12,6 +13,7 @@ export function SearchBar({ onSelect }: SearchBarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { recentSearches, addSearch, removeSearch, clearSearches } = useRecentSearches();
 
   const { data, isLoading } = useQuery({
     queryKey: ["documents", "search", query],
@@ -48,9 +50,21 @@ export function SearchBar({ onSelect }: SearchBarProps) {
   }, []);
 
   const handleSelect = (document: Document) => {
+    if (query.trim()) {
+      addSearch(query.trim());
+    }
     setQuery("");
     setIsOpen(false);
     onSelect(document.id);
+  };
+
+  const handleRecentSearchClick = (search: string) => {
+    setQuery(search);
+  };
+
+  const handleRemoveRecentSearch = (e: React.MouseEvent, search: string) => {
+    e.stopPropagation();
+    removeSearch(search);
   };
 
   const documents = data?.documents || [];
@@ -118,6 +132,63 @@ export function SearchBar({ onSelect }: SearchBarProps) {
               ))}
             </ul>
           )}
+        </div>
+      )}
+
+      {isOpen && query.length === 0 && recentSearches.length > 0 && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-80 overflow-y-auto z-50">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Recent Searches
+            </span>
+            <button
+              onClick={clearSearches}
+              className="text-xs text-gray-400 hover:text-gray-600"
+            >
+              Clear all
+            </button>
+          </div>
+          <ul>
+            {recentSearches.map((search) => (
+              <li key={search}>
+                <button
+                  onClick={() => handleRecentSearchClick(search)}
+                  className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 group"
+                >
+                  <span className="flex items-center gap-2 text-sm text-gray-700">
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    {search}
+                  </span>
+                  <button
+                    onClick={(e) => handleRemoveRecentSearch(e, search)}
+                    className="p-1 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label={`Remove "${search}" from recent searches`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
