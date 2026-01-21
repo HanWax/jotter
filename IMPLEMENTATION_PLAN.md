@@ -4,12 +4,12 @@
 
 ## Current Focus
 
-(none - all Homepage PRD tasks complete)
+(none)
 
 ## Backlog
 
 ### P1: Should Have (from PRD)
-- [ ] Full-text content search (currently title search only)
+- [x] Full-text content search (commit: 080ccb0)
 - [ ] Keyboard shortcuts (Cmd+K for search, Cmd+N for new doc)
 
 ### P2: Could Have (from PRD)
@@ -31,7 +31,7 @@
 
 ## Discovered Issues
 
-(none currently)
+- [ ] ESLint not installed in web app (`pnpm lint` fails with "eslint: command not found")
 
 ## Completed
 

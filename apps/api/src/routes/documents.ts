@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { eq, and, desc, asc, max, ilike } from "drizzle-orm";
+import { eq, and, desc, asc, max, ilike, or, sql } from "drizzle-orm";
 import { createDb, type Env } from "../db/index.ts";
 import { documents, documentVersions } from "../db/schema.ts";
 import {
@@ -66,7 +66,7 @@ documentsRouter.get(
   }
 );
 
-// Search documents
+// Search documents (full-text: searches both title and content)
 documentsRouter.get(
   "/search",
   zValidator("query", documentSearchSchema),
@@ -75,10 +75,20 @@ documentsRouter.get(
     const { q } = c.req.valid("query");
     const db = createDb(c.env);
 
+    // Search both title and content (JSONB cast to text)
+    const searchPattern = `%${q}%`;
     const results = await db
       .select()
       .from(documents)
-      .where(and(eq(documents.userId, userId), ilike(documents.title, `%${q}%`)))
+      .where(
+        and(
+          eq(documents.userId, userId),
+          or(
+            ilike(documents.title, searchPattern),
+            sql`${documents.content}::text ILIKE ${searchPattern}`
+          )
+        )
+      )
       .orderBy(desc(documents.updatedAt))
       .limit(20);
 
