@@ -117,6 +117,64 @@ This email was sent to ${recipientEmail} because someone shared a Jotter documen
   };
 }
 
+export function buildCommentNotificationEmail(params: {
+  ownerEmail: string;
+  documentTitle: string;
+  documentUrl: string;
+  commenterName: string;
+  commentContent: string;
+  selectionText?: string;
+}): EmailOptions {
+  const { ownerEmail, documentTitle, documentUrl, commenterName, commentContent, selectionText } = params;
+
+  const selectionQuote = selectionText
+    ? `<div style="background: #fef9c3; border-left: 3px solid #facc15; padding: 12px; margin: 16px 0; font-style: italic; color: #666;">"${escapeHtml(selectionText)}"</div>`
+    : "";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: #f8f9fa; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
+    <h1 style="margin: 0 0 16px 0; font-size: 24px; color: #1a1a1a;">New comment on your document</h1>
+    <p style="margin: 0 0 8px 0; font-size: 16px;"><strong>${escapeHtml(commenterName)}</strong> commented on: <strong>${escapeHtml(documentTitle)}</strong></p>
+    ${selectionQuote}
+    <div style="background: white; border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; margin: 16px 0;">
+      <p style="margin: 0; color: #374151;">${escapeHtml(commentContent)}</p>
+    </div>
+    <a href="${documentUrl}" style="display: inline-block; background: #2563eb; color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 500;">View Document</a>
+  </div>
+  <p style="color: #999; font-size: 12px; margin-top: 20px;">
+    This email was sent to ${escapeHtml(ownerEmail)} because someone commented on your Jotter document.
+  </p>
+</body>
+</html>
+  `.trim();
+
+  const text = `
+New comment on your document
+
+${commenterName} commented on: ${documentTitle}
+
+${selectionText ? `On the text: "${selectionText}"\n\n` : ""}Comment: ${commentContent}
+
+View your document here: ${documentUrl}
+
+This email was sent to ${ownerEmail} because someone commented on your Jotter document.
+  `.trim();
+
+  return {
+    to: ownerEmail,
+    subject: `New comment on "${documentTitle}" from ${commenterName}`,
+    html,
+    text,
+  };
+}
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")

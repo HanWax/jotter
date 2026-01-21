@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { eq, and, desc } from "drizzle-orm";
 import { createDb, type Env } from "../db/index.ts";
-import { documents, shares, comments } from "../db/schema.ts";
+import { documents, shares, comments, users } from "../db/schema.ts";
 import {
   createShareSchema,
   createCommentSchema,
@@ -10,7 +10,7 @@ import {
 } from "@jotter/shared";
 import { z } from "zod";
 import type { AuthVariables } from "../middleware/auth.ts";
-import { sendEmail, buildShareNotificationEmail } from "../services/email.ts";
+import { sendEmail, buildShareNotificationEmail, buildCommentNotificationEmail } from "../services/email.ts";
 
 const shareTokenSchema = z.object({
   token: z.string().min(1),
@@ -234,6 +234,20 @@ sharesRouter.post(
       return c.json({ error: "This share has expired" }, 403);
     }
 
+    // Get the document and owner info for notification
+    const [doc] = await db
+      .select({
+        id: documents.id,
+        title: documents.title,
+        userId: documents.userId,
+      })
+      .from(documents)
+      .where(eq(documents.id, share.documentId));
+
+    if (!doc) {
+      return c.json({ error: "Document not found" }, 404);
+    }
+
     // Create the comment
     const [comment] = await db
       .insert(comments)
@@ -248,6 +262,33 @@ sharesRouter.post(
         selectionText: commentData.selectionText,
       })
       .returning();
+
+    // Get document owner's email for notification
+    const [owner] = await db
+      .select({ email: users.email })
+      .from(users)
+      .where(eq(users.id, doc.userId));
+
+    if (owner?.email) {
+      const webUrl = c.env.WEB_URL || "http://localhost:5173";
+      const documentUrl = `${webUrl}/documents/${doc.id}`;
+
+      const emailOptions = buildCommentNotificationEmail({
+        ownerEmail: owner.email,
+        documentTitle: doc.title,
+        documentUrl,
+        commenterName: commentData.authorName,
+        commentContent: commentData.content,
+        selectionText: commentData.selectionText || undefined,
+      });
+
+      // Fire and forget - don't await to avoid blocking response
+      c.executionCtx.waitUntil(
+        sendEmail(c.env.RESEND_API_KEY, emailOptions).catch((err) => {
+          console.error("[Comment] Failed to send notification email:", err);
+        })
+      );
+    }
 
     return c.json({ comment }, 201);
   }

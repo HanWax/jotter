@@ -28,7 +28,7 @@
 ### P4: Sharing & Comments (from specs)
 - [x] Text selection capture for comment references
 - [x] Email notification when share is created
-- [ ] Email notification when comment is added
+- [x] Email notification when comment is added
 - [ ] Pagination for comments list
 - [ ] Ability to un-revoke a share
 - [ ] Share access analytics (view count)
