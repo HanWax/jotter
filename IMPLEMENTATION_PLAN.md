@@ -31,7 +31,7 @@
 
 ## Discovered Issues
 
-- [ ] ESLint not installed in web app (`pnpm lint` fails with "eslint: command not found")
+(none currently)
 
 ## Completed
 
