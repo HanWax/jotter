@@ -180,6 +180,70 @@ export const api = {
         { method: "DELETE", token }
       ),
   },
+
+  // Shares
+  shares: {
+    list: (documentId: string, token: string | null) =>
+      request<{ shares: Share[] }>(`/api/shares/documents/${documentId}/shares`, {
+        token,
+      }),
+    create: (documentId: string, data: CreateShareInput, token: string | null) =>
+      request<{ share: Share }>(`/api/shares/documents/${documentId}/shares`, {
+        method: "POST",
+        body: data,
+        token,
+      }),
+    revoke: (shareId: string, token: string | null) =>
+      request<{ success: boolean }>(`/api/shares/${shareId}`, {
+        method: "DELETE",
+        token,
+      }),
+    // Public endpoints (no auth)
+    getShared: (token: string) =>
+      request<{ document: SharedDocument; share: { id: string; email: string } }>(
+        `/api/shared/${token}`
+      ),
+    getSharedComments: (token: string) =>
+      request<{ comments: Comment[] }>(`/api/shared/${token}/comments`),
+    createSharedComment: (token: string, data: CreateCommentInput) =>
+      request<{ comment: Comment }>(`/api/shared/${token}/comments`, {
+        method: "POST",
+        body: data,
+      }),
+  },
+
+  // Comments
+  comments: {
+    list: (documentId: string, token: string | null) =>
+      request<{ comments: Comment[] }>(
+        `/api/comments/documents/${documentId}/comments`,
+        { token }
+      ),
+    create: (documentId: string, data: CreateCommentInput, token: string | null) =>
+      request<{ comment: Comment }>(
+        `/api/comments/documents/${documentId}/comments`,
+        { method: "POST", body: data, token }
+      ),
+    update: (commentId: string, data: UpdateCommentInput, token: string | null) =>
+      request<{ comment: Comment }>(`/api/comments/${commentId}`, {
+        method: "PATCH",
+        body: data,
+        token,
+      }),
+    delete: (commentId: string, token: string | null) =>
+      request<{ success: boolean }>(`/api/comments/${commentId}`, {
+        method: "DELETE",
+        token,
+      }),
+  },
+};
+
+type SharedDocument = {
+  id: string;
+  title: string;
+  content: unknown;
+  status: string;
+  publishedAt: Date | null;
 };
 
 // Re-export types for convenience
@@ -189,12 +253,17 @@ import type {
   Folder,
   Tag,
   Asset,
+  Share,
+  Comment,
   CreateDocumentInput,
   UpdateDocumentInput,
   CreateFolderInput,
   UpdateFolderInput,
   CreateTagInput,
   UpdateTagInput,
+  CreateShareInput,
+  CreateCommentInput,
+  UpdateCommentInput,
 } from "@jotter/shared";
 
 export type { ApiError };

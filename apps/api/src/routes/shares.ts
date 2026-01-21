@@ -1,0 +1,269 @@
+import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { eq, and, desc } from "drizzle-orm";
+import { createDb, type Env } from "../db/index.ts";
+import { documents, shares, comments } from "../db/schema.ts";
+import {
+  createShareSchema,
+  createCommentSchema,
+  idParamSchema,
+} from "@jotter/shared";
+import { z } from "zod";
+import type { AuthVariables } from "../middleware/auth.ts";
+
+const shareTokenSchema = z.object({
+  token: z.string().min(1),
+});
+
+type SharesEnv = {
+  Bindings: Env & { CLERK_SECRET_KEY: string };
+  Variables: AuthVariables;
+};
+
+export const sharesRouter = new Hono<SharesEnv>();
+
+// List shares for a document
+sharesRouter.get(
+  "/documents/:id/shares",
+  zValidator("param", idParamSchema),
+  async (c) => {
+    const userId = c.get("userId");
+    const { id } = c.req.valid("param");
+    const db = createDb(c.env);
+
+    // Verify document belongs to user
+    const [document] = await db
+      .select()
+      .from(documents)
+      .where(and(eq(documents.id, id), eq(documents.userId, userId)));
+
+    if (!document) {
+      return c.json({ error: "Document not found" }, 404);
+    }
+
+    const documentShares = await db
+      .select()
+      .from(shares)
+      .where(eq(shares.documentId, id))
+      .orderBy(desc(shares.createdAt));
+
+    return c.json({ shares: documentShares });
+  }
+);
+
+// Create a share for a document
+sharesRouter.post(
+  "/documents/:id/shares",
+  zValidator("param", idParamSchema),
+  zValidator("json", createShareSchema),
+  async (c) => {
+    const userId = c.get("userId");
+    const { id } = c.req.valid("param");
+    const { email, expiresAt } = c.req.valid("json");
+    const db = createDb(c.env);
+
+    // Verify document belongs to user
+    const [document] = await db
+      .select()
+      .from(documents)
+      .where(and(eq(documents.id, id), eq(documents.userId, userId)));
+
+    if (!document) {
+      return c.json({ error: "Document not found" }, 404);
+    }
+
+    // Generate a unique token
+    const token = crypto.randomUUID();
+
+    const [share] = await db
+      .insert(shares)
+      .values({
+        documentId: id,
+        email,
+        token,
+        expiresAt: expiresAt ?? null,
+      })
+      .returning();
+
+    return c.json({ share }, 201);
+  }
+);
+
+// Revoke a share
+sharesRouter.delete(
+  "/:id",
+  zValidator("param", idParamSchema),
+  async (c) => {
+    const userId = c.get("userId");
+    const { id } = c.req.valid("param");
+    const db = createDb(c.env);
+
+    // Get the share and verify it belongs to user's document
+    const [share] = await db.select().from(shares).where(eq(shares.id, id));
+
+    if (!share) {
+      return c.json({ error: "Share not found" }, 404);
+    }
+
+    // Verify document belongs to user
+    const [document] = await db
+      .select()
+      .from(documents)
+      .where(and(eq(documents.id, share.documentId), eq(documents.userId, userId)));
+
+    if (!document) {
+      return c.json({ error: "Unauthorized" }, 403);
+    }
+
+    // Mark as revoked
+    await db
+      .update(shares)
+      .set({ revoked: true })
+      .where(eq(shares.id, id));
+
+    return c.json({ success: true });
+  }
+);
+
+// Public: Get shared document (no auth required)
+sharesRouter.get(
+  "/shared/:token",
+  zValidator("param", shareTokenSchema),
+  async (c) => {
+    const { token } = c.req.valid("param");
+    const db = createDb(c.env);
+
+    // Get the share
+    const [share] = await db
+      .select()
+      .from(shares)
+      .where(eq(shares.token, token));
+
+    if (!share) {
+      return c.json({ error: "Share not found" }, 404);
+    }
+
+    // Check if revoked
+    if (share.revoked) {
+      return c.json({ error: "This share has been revoked" }, 403);
+    }
+
+    // Check if expired
+    if (share.expiresAt && new Date(share.expiresAt) < new Date()) {
+      return c.json({ error: "This share has expired" }, 403);
+    }
+
+    // Get the document
+    const [document] = await db
+      .select()
+      .from(documents)
+      .where(eq(documents.id, share.documentId));
+
+    if (!document) {
+      return c.json({ error: "Document not found" }, 404);
+    }
+
+    // Return published content if available, otherwise current content
+    const content = document.publishedContent ?? document.content;
+
+    return c.json({
+      document: {
+        id: document.id,
+        title: document.title,
+        content,
+        status: document.status,
+        publishedAt: document.publishedAt,
+      },
+      share: {
+        id: share.id,
+        email: share.email,
+      },
+    });
+  }
+);
+
+// Public: Add comment to shared document (no auth required)
+sharesRouter.post(
+  "/shared/:token/comments",
+  zValidator("param", shareTokenSchema),
+  zValidator("json", createCommentSchema),
+  async (c) => {
+    const { token } = c.req.valid("param");
+    const commentData = c.req.valid("json");
+    const db = createDb(c.env);
+
+    // Get the share
+    const [share] = await db
+      .select()
+      .from(shares)
+      .where(eq(shares.token, token));
+
+    if (!share) {
+      return c.json({ error: "Share not found" }, 404);
+    }
+
+    // Check if revoked or expired
+    if (share.revoked) {
+      return c.json({ error: "This share has been revoked" }, 403);
+    }
+
+    if (share.expiresAt && new Date(share.expiresAt) < new Date()) {
+      return c.json({ error: "This share has expired" }, 403);
+    }
+
+    // Create the comment
+    const [comment] = await db
+      .insert(comments)
+      .values({
+        documentId: share.documentId,
+        shareId: share.id,
+        authorName: commentData.authorName,
+        authorEmail: commentData.authorEmail ?? null,
+        content: commentData.content,
+        selectionStart: commentData.selectionStart,
+        selectionEnd: commentData.selectionEnd,
+        selectionText: commentData.selectionText,
+      })
+      .returning();
+
+    return c.json({ comment }, 201);
+  }
+);
+
+// Public: Get comments for shared document
+sharesRouter.get(
+  "/shared/:token/comments",
+  zValidator("param", shareTokenSchema),
+  async (c) => {
+    const { token } = c.req.valid("param");
+    const db = createDb(c.env);
+
+    // Get the share
+    const [share] = await db
+      .select()
+      .from(shares)
+      .where(eq(shares.token, token));
+
+    if (!share) {
+      return c.json({ error: "Share not found" }, 404);
+    }
+
+    // Check if revoked or expired
+    if (share.revoked) {
+      return c.json({ error: "This share has been revoked" }, 403);
+    }
+
+    if (share.expiresAt && new Date(share.expiresAt) < new Date()) {
+      return c.json({ error: "This share has expired" }, 403);
+    }
+
+    // Get comments for this document
+    const documentComments = await db
+      .select()
+      .from(comments)
+      .where(eq(comments.documentId, share.documentId))
+      .orderBy(desc(comments.createdAt));
+
+    return c.json({ comments: documentComments });
+  }
+);

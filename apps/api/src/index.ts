@@ -5,6 +5,8 @@ import { documentsRouter } from "./routes/documents.ts";
 import { foldersRouter } from "./routes/folders.ts";
 import { tagsRouter } from "./routes/tags.ts";
 import { assetsRouter } from "./routes/assets.ts";
+import { sharesRouter } from "./routes/shares.ts";
+import { commentsRouter } from "./routes/comments.ts";
 
 type Bindings = AuthEnv & {
   ENVIRONMENT: string;
@@ -42,7 +44,12 @@ api.route("/documents", documentsRouter);
 api.route("/folders", foldersRouter);
 api.route("/tags", tagsRouter);
 api.route("/assets", assetsRouter);
+api.route("/shares", sharesRouter);
+api.route("/comments", commentsRouter);
 
 app.route("/api", api);
+
+// Public routes (no auth required)
+app.route("/api", sharesRouter);
 
 export default app;

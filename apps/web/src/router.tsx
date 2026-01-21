@@ -6,6 +6,7 @@ import { SignUpRoute } from "./routes/sign-up";
 import { DashboardLayout } from "./routes/dashboard";
 import { DocumentsIndexRoute } from "./routes/documents.index";
 import { DocumentRoute } from "./routes/documents.$id";
+import { SharedDocumentRoute } from "./routes/shared.$token";
 
 const rootRoute = createRootRoute({
   component: RootLayout,
@@ -66,10 +67,21 @@ const foldersRoute = createRoute({
   },
 });
 
+// Public shared document route (no auth)
+const sharedRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/shared/$token",
+  component: () => {
+    const { token } = sharedRoute.useParams();
+    return <SharedDocumentRoute token={token} />;
+  },
+});
+
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   signInRoute,
   signUpRoute,
+  sharedRoute,
   dashboardRoute.addChildren([
     documentsIndexRoute,
     documentRoute,
