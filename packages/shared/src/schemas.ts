@@ -12,6 +12,7 @@ export const updateDocumentSchema = z.object({
   content: z.unknown().optional(),
   folderId: z.string().uuid().nullable().optional(),
   parentDocumentId: z.string().uuid().nullable().optional(),
+  isPinned: z.boolean().optional(),
 });
 
 export const createFolderSchema = z.object({

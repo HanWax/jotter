@@ -8,7 +8,18 @@ description: Ralph loop orchestrator - execute tasks one at a time with verifica
 Implements the Ralph Loop pattern: autonomous single-task execution with verification gates, rollback capability, and failure tracking.
 
 ## Task Queue Location
-`docs/tasks.md`
+
+The task queue file can be specified when invoking the skill. If no path is provided, defaults to `docs/tasks.md`.
+
+Supported patterns:
+- `docs/tasks.md` (default)
+- `docs/<feature>/tasks.md` (feature-specific task files)
+- Any `.md` file in docs that follows the task queue format
+
+The skill will automatically look for an associated PRD file:
+- If task file is `docs/tasks.md` → looks for `docs/PRD.md`
+- If task file is `docs/<feature>/tasks.md` → looks for `docs/<feature>/PRD.md`
+- If task file is `docs/<feature>-tasks.md` → looks for `docs/<feature>-PRD.md` or `docs/<feature>.md`
 
 ## Task Queue Format
 ```markdown
@@ -32,11 +43,13 @@ Implements the Ralph Loop pattern: autonomous single-task execution with verific
 
 ### 1. Initialization
 ```
-1. Read task queue from docs/tasks.md
-2. Validate queue format
-3. Check git status is clean (no uncommitted changes)
-4. Identify next pending task
-5. Create checkpoint: `git stash push -m "loop-checkpoint-$(date +%s)"` or commit
+1. Resolve task queue path (from argument or default to docs/tasks.md)
+2. Read task queue from resolved path
+3. Locate associated PRD file (if exists) for context
+4. Validate queue format
+5. Check git status is clean (no uncommitted changes)
+6. Identify next pending task
+7. Create checkpoint: `git stash push -m "loop-checkpoint-$(date +%s)"` or commit
 ```
 
 ### 2. Pre-Task Validation
@@ -73,7 +86,7 @@ For each task, FIRST generate acceptance criteria:
 - Test case 2: edge case handling
 ```
 
-Write spec to `docs.local/specs/task-N.md` before proceeding.
+Write spec to `docs.local/specs/<feature>/task-N.md` before proceeding. The `<feature>` directory is derived from the task file path (e.g., `docs/auth/tasks.md` → `docs.local/specs/auth/task-N.md`). For the default `docs/tasks.md`, specs go to `docs.local/specs/task-N.md`.
 
 ### 4. Task Execution
 ```
@@ -160,7 +173,7 @@ After every 3 successful tasks:
 
 ## Failure Pattern Tracking
 
-Maintain `docs.local/failures.md`:
+Maintain `docs.local/failures.md` (or `docs.local/<feature>/failures.md` for feature-specific task files):
 ```markdown
 # Failure Log
 
@@ -180,7 +193,7 @@ When a failure type recurs 3+ times:
 
 ## Loop Log
 
-Maintain `docs.local/loop-log.md`:
+Maintain `docs.local/loop-log.md` (or `docs.local/<feature>/loop-log.md` for feature-specific task files):
 ```markdown
 # Loop Execution Log
 
@@ -204,14 +217,27 @@ Maintain `docs.local/loop-log.md`:
 ## Usage
 
 ```
-/loop                    # Start loop from next pending task
-/loop --task N           # Start from specific task number
-/loop --dry-run          # Show what would execute without running
-/loop --status           # Show current queue status
-/loop --pause-after N    # Pause after N tasks for review
-/loop --skip-review      # Skip periodic /review gates (not recommended)
-/loop --continue         # Continue after human fixed a failure
+/loop                              # Start loop from next pending task (uses docs/tasks.md)
+/loop [path]                       # Start loop using specified task file
+/loop docs/homepage/tasks.md       # Example: run loop for homepage feature
+/loop --task N                     # Start from specific task number
+/loop --dry-run                    # Show what would execute without running
+/loop --status                     # Show current queue status
+/loop --status [path]              # Show status for specific task file
+/loop --pause-after N              # Pause after N tasks for review
+/loop --skip-review                # Skip periodic /review gates (not recommended)
+/loop --continue                   # Continue after human fixed a failure
 ```
+
+### Path Resolution
+
+When a path is provided:
+1. If it's an absolute path, use it directly
+2. If it's a relative path, resolve from project root
+3. If just a name like `homepage`, look for:
+   - `docs/homepage/tasks.md`
+   - `docs/homepage-tasks.md`
+   - `docs/homepage.tasks.md`
 
 ## Human Intervention Points
 
@@ -249,6 +275,15 @@ To resume after intervention:
 
 Reading task queue from docs/tasks.md...
 Found 12 pending tasks.
+```
+
+Or with a custom path:
+```
+> /loop docs/auth/tasks.md
+
+Reading task queue from docs/auth/tasks.md...
+Found PRD at docs/auth/PRD.md
+Found 8 pending tasks.
 
 Starting Task 1: Set up Drizzle schema for users table
 - Size: S (estimated 2 files, ~50 lines)
