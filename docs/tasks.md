@@ -4,33 +4,7 @@
 
 ## Pending
 
-### Phase 9: Database & API Updates for Homepage
-- [ ] Task 52: Add isPinned boolean field to documents schema | Files: apps/api/src/db/schema.ts | Size: S
-- [ ] Task 53: Add search endpoint for documents | Files: apps/api/src/routes/documents.ts | Size: S
-- [ ] Task 54: Add query params support (pinned, sort, limit) to documents list | Files: apps/api/src/routes/documents.ts | Size: S
-
-### Phase 10: Navbar Components
-- [ ] Task 55: Create Navbar component with logo and navigation links | Files: apps/web/src/components/layout/Navbar.tsx | Size: M
-- [ ] Task 56: Create UserMenu dropdown component | Files: apps/web/src/components/layout/UserMenu.tsx | Size: S
-- [ ] Task 57: Create CreateDropdown component (New Document/Folder) | Files: apps/web/src/components/layout/CreateDropdown.tsx | Size: S
-- [ ] Task 58: Create SearchBar component with results dropdown | Files: apps/web/src/components/layout/SearchBar.tsx | Size: M
-
-### Phase 11: Homepage Document Components
-- [ ] Task 59: Create DocumentCard component for grid view | Files: apps/web/src/components/documents/DocumentCard.tsx | Size: M
-- [ ] Task 60: Create DocumentRow component for list view | Files: apps/web/src/components/documents/DocumentRow.tsx | Size: S
-- [ ] Task 61: Create PinnedDocuments section component | Files: apps/web/src/components/homepage/PinnedDocuments.tsx | Size: M
-- [ ] Task 62: Create RecentDocuments section with view toggle | Files: apps/web/src/components/homepage/RecentDocuments.tsx | Size: M
-- [ ] Task 63: Create EmptyState component for new users | Files: apps/web/src/components/homepage/EmptyState.tsx | Size: S
-
-### Phase 12: Homepage Integration
-- [ ] Task 64: Create HomePage route component | Files: apps/web/src/routes/index.tsx | Size: M
-- [ ] Task 65: Add useDocumentSearch hook | Files: apps/web/src/hooks/useDocumentSearch.ts | Size: S
-- [ ] Task 66: Add usePinnedDocuments hook with pin/unpin mutation | Files: apps/web/src/hooks/usePinnedDocuments.ts | Size: S
-- [ ] Task 67: Add view preference persistence (localStorage) | Files: apps/web/src/hooks/useViewPreference.ts | Size: S
-
-### Phase 13: Responsive Design & Polish
-- [ ] Task 68: Implement responsive navbar with mobile hamburger menu | Files: apps/web/src/components/layout/Navbar.tsx, MobileMenu.tsx | Size: M
-- [ ] Task 69: Implement responsive homepage grid/list layouts | Files: apps/web/src/components/homepage/*.tsx | Size: M
+(none)
 
 ## In Progress
 
@@ -104,6 +78,34 @@
 - [x] Task 49: Configure Cloudflare Workers deployment | Files: apps/api/wrangler.toml | Size: S
 - [x] Task 50: Configure frontend deployment (Pages/Vercel) | Files: apps/web/vercel.json or wrangler.toml | Size: S
 - [x] Task 51: Set up environment variables for production | Files: .env.example, README.md | Size: S
+
+### Phase 9: Database & API Updates for Homepage
+- [x] Task 52: Add isPinned boolean field to documents schema | Files: apps/api/src/db/schema.ts | Size: S
+- [x] Task 53: Add search endpoint for documents | Files: apps/api/src/routes/documents.ts | Size: S
+- [x] Task 54: Add query params support (pinned, sort, limit) to documents list | Files: apps/api/src/routes/documents.ts | Size: S
+
+### Phase 10: Navbar Components
+- [x] Task 55: Create Navbar component with logo and navigation links | Files: apps/web/src/components/layout/Navbar.tsx | Size: M
+- [x] Task 56: Create UserMenu dropdown component | Files: apps/web/src/components/layout/UserMenu.tsx | Size: S
+- [x] Task 57: Create CreateDropdown component (New Document/Folder) | Files: apps/web/src/components/layout/CreateDropdown.tsx | Size: S
+- [x] Task 58: Create SearchBar component with results dropdown | Files: apps/web/src/components/layout/SearchBar.tsx | Size: M
+
+### Phase 11: Homepage Document Components
+- [x] Task 59: Create DocumentCard component for grid view | Files: apps/web/src/components/documents/DocumentCard.tsx | Size: M
+- [x] Task 60: Create DocumentRow component for list view | Files: apps/web/src/components/documents/DocumentRow.tsx | Size: S
+- [x] Task 61: Create PinnedDocuments section component | Files: apps/web/src/components/homepage/PinnedDocuments.tsx | Size: M
+- [x] Task 62: Create RecentDocuments section with view toggle | Files: apps/web/src/components/homepage/RecentDocuments.tsx | Size: M
+- [x] Task 63: Create EmptyState component for new users | Files: apps/web/src/components/homepage/EmptyState.tsx | Size: S
+
+### Phase 12: Homepage Integration
+- [x] Task 64: Create HomePage route component | Files: apps/web/src/routes/index.tsx | Size: M
+- [x] Task 65: Add useDocumentSearch hook | Files: apps/web/src/hooks/useDocumentSearch.ts | Size: S
+- [x] Task 66: Add usePinnedDocuments hook with pin/unpin mutation | Files: apps/web/src/hooks/usePinnedDocuments.ts | Size: S
+- [x] Task 67: Add view preference persistence (localStorage) | Files: apps/web/src/hooks/useViewPreference.ts | Size: S
+
+### Phase 13: Responsive Design & Polish
+- [x] Task 68: Implement responsive navbar with mobile hamburger menu | Files: apps/web/src/components/layout/Navbar.tsx, MobileMenu.tsx | Size: M
+- [x] Task 69: Implement responsive homepage grid/list layouts | Files: apps/web/src/components/homepage/*.tsx | Size: M
 
 ## Failed (needs human intervention)
 
