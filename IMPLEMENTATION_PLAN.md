@@ -30,7 +30,7 @@
 - [x] Email notification when share is created
 - [x] Email notification when comment is added
 - [x] Pagination for comments list
-- [ ] Ability to un-revoke a share
+- [x] Ability to un-revoke a share
 - [ ] Share access analytics (view count)
 
 ### Future Considerations

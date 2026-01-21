@@ -223,6 +223,11 @@ export const api = {
         method: "DELETE",
         token,
       }),
+    restore: (shareId: string, token: string | null) =>
+      request<{ share: Share }>(`/api/shares/${shareId}/restore`, {
+        method: "POST",
+        token,
+      }),
     // Public endpoints (no auth)
     getShared: (token: string) =>
       request<{ document: SharedDocument; share: { id: string; email: string } }>(

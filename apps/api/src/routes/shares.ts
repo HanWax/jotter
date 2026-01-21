@@ -149,6 +149,47 @@ sharesRouter.delete(
   }
 );
 
+// Restore (un-revoke) a share
+sharesRouter.post(
+  "/:id/restore",
+  zValidator("param", idParamSchema),
+  async (c) => {
+    const userId = c.get("userId");
+    const { id } = c.req.valid("param");
+    const db = createDb(c.env);
+
+    // Get the share and verify it belongs to user's document
+    const [share] = await db.select().from(shares).where(eq(shares.id, id));
+
+    if (!share) {
+      return c.json({ error: "Share not found" }, 404);
+    }
+
+    // Verify document belongs to user
+    const [doc] = await db
+      .select()
+      .from(documents)
+      .where(and(eq(documents.id, share.documentId), eq(documents.userId, userId)));
+
+    if (!doc) {
+      return c.json({ error: "Unauthorized" }, 403);
+    }
+
+    if (!share.revoked) {
+      return c.json({ error: "Share is not revoked" }, 400);
+    }
+
+    // Restore the share
+    const [restored] = await db
+      .update(shares)
+      .set({ revoked: false })
+      .where(eq(shares.id, id))
+      .returning();
+
+    return c.json({ share: restored });
+  }
+);
+
 // Public: Get shared document (no auth required)
 sharesRouter.get(
   "/shared/:token",
