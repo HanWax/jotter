@@ -58,6 +58,5 @@ Commits:
 
 ## Reference
 
-**PRD**: `docs/PRD.md`
-**Specs**: `docs/PRD.md` (consolidated)
+**Specs**: `specs/` (per-feature JTBD specifications)
 **AGENTS**: `AGENTS.md` (operational commands)
