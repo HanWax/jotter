@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { Document } from "@jotter/shared";
 import { formatRelativeTime } from "../../lib/utils";
+import { DocumentPreviewPopover } from "./DocumentPreviewPopover";
 
 interface DocumentRowProps {
   document: Document;
@@ -9,6 +10,7 @@ interface DocumentRowProps {
   isSelected?: boolean;
   onSelectionChange?: (id: string, isSelected: boolean) => void;
   showCheckbox?: boolean;
+  showPreviewOnHover?: boolean;
 }
 
 export function DocumentRow({
@@ -18,6 +20,7 @@ export function DocumentRow({
   isSelected = false,
   onSelectionChange,
   showCheckbox = false,
+  showPreviewOnHover = true,
 }: DocumentRowProps) {
   const handlePinClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -90,6 +93,7 @@ export function DocumentRow({
     </>
   );
 
+  // In selection mode, disable preview since clicking doesn't navigate
   if (showCheckbox) {
     return (
       <div
@@ -103,7 +107,7 @@ export function DocumentRow({
     );
   }
 
-  return (
+  const linkElement = (
     <Link
       to="/documents/$id"
       params={{ id: document.id }}
@@ -112,4 +116,14 @@ export function DocumentRow({
       {rowContent}
     </Link>
   );
+
+  if (showPreviewOnHover) {
+    return (
+      <DocumentPreviewPopover document={document}>
+        {linkElement}
+      </DocumentPreviewPopover>
+    );
+  }
+
+  return linkElement;
 }

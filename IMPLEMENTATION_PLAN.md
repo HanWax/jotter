@@ -16,7 +16,7 @@
 - [x] Recent searches in search dropdown
 - [x] Document thumbnails in grid view
 - [x] Bulk selection and actions in list view
-- [ ] Document preview on hover
+- [x] Document preview on hover
 - [ ] Drag-and-drop reordering of pinned documents
 
 ### Future Considerations
