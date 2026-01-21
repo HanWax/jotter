@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { eq, and, desc, count } from "drizzle-orm";
+import { eq, and, desc, count, sql } from "drizzle-orm";
 import { createDb, type Env } from "../db/index.ts";
 import { documents, shares, comments, users } from "../db/schema.ts";
 import {
@@ -227,6 +227,20 @@ sharesRouter.get(
     if (!document) {
       return c.json({ error: "Document not found" }, 404);
     }
+
+    // Increment view count (non-blocking)
+    c.executionCtx.waitUntil(
+      db
+        .update(shares)
+        .set({
+          viewCount: sql`${shares.viewCount} + 1`,
+          lastViewedAt: new Date(),
+        })
+        .where(eq(shares.id, share.id))
+        .catch((err) => {
+          console.error("[Share] Failed to update view count:", err);
+        })
+    );
 
     // Return published content if available, otherwise current content
     const content = document.publishedContent ?? document.content;

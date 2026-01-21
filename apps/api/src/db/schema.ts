@@ -233,6 +233,8 @@ export const shares = pgTable("shares", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   expiresAt: timestamp("expires_at"),
   revoked: boolean("revoked").notNull().default(false),
+  viewCount: integer("view_count").notNull().default(0),
+  lastViewedAt: timestamp("last_viewed_at"),
 });
 
 export const sharesRelations = relations(shares, ({ one, many }) => ({

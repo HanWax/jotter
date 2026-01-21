@@ -75,6 +75,8 @@ export type Share = {
   createdAt: Date;
   expiresAt: Date | null;
   revoked: boolean;
+  viewCount: number;
+  lastViewedAt: Date | null;
 };
 
 export type Comment = {

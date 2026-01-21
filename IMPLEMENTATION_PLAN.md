@@ -25,13 +25,13 @@
 - [x] Ability to name/annotate versions
 - [x] Version comparison side-by-side view
 
-### P4: Sharing & Comments (from specs)
+### P4: Sharing & Comments (from specs) - COMPLETE
 - [x] Text selection capture for comment references
 - [x] Email notification when share is created
 - [x] Email notification when comment is added
 - [x] Pagination for comments list
 - [x] Ability to un-revoke a share
-- [ ] Share access analytics (view count)
+- [x] Share access analytics (view count)
 
 ### Future Considerations
 - [ ] Activity feed / timeline
