@@ -3,6 +3,9 @@ import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { UserMenu } from "./UserMenu";
 import { CreateDropdown } from "./CreateDropdown";
 import { SearchBar } from "./SearchBar";
+import { MobileMenu } from "./MobileMenu";
+import { useCreateDocument } from "../../hooks/useDocuments";
+import { useCreateFolder } from "../../hooks/useFolders";
 
 const navLinks = [
   { to: "/documents" as const, label: "Documents" },
@@ -13,13 +16,35 @@ const navLinks = [
 
 export function Navbar() {
   const navigate = useNavigate();
+  const createDocument = useCreateDocument();
+  const createFolder = useCreateFolder();
 
   const handleSearchSelect = (documentId: string) => {
     navigate({ to: "/documents/$id", params: { id: documentId } });
   };
 
+  const handleCreateDocument = () => {
+    createDocument.mutate(
+      { title: "Untitled" },
+      {
+        onSuccess: (data) => {
+          navigate({ to: "/documents/$id", params: { id: data.document.id } });
+        },
+      }
+    );
+  };
+
+  const handleCreateFolder = () => {
+    const name = prompt("Enter folder name:");
+    if (name?.trim()) {
+      createFolder.mutate({ name: name.trim() });
+    }
+  };
+
+  const isCreating = createDocument.isPending || createFolder.isPending;
+
   return (
-    <header className="h-14 bg-white border-b border-gray-200 flex items-center px-4 gap-4">
+    <header className="h-14 bg-white border-b border-gray-200 flex items-center px-4 gap-4 shrink-0">
       <Link to="/" className="text-xl font-bold text-blue-600 shrink-0">
         Jotter
       </Link>
@@ -42,8 +67,17 @@ export function Navbar() {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          <CreateDropdown />
-          <UserMenu />
+          <div className="hidden md:block">
+            <CreateDropdown />
+          </div>
+          <div className="hidden md:block">
+            <UserMenu />
+          </div>
+          <MobileMenu
+            onCreateDocument={handleCreateDocument}
+            onCreateFolder={handleCreateFolder}
+            isCreating={isCreating}
+          />
         </div>
       </SignedIn>
 
